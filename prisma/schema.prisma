@@ -137,10 +137,33 @@ model EmployerProfile {
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jobs Job[]
+  jobs     Job[]
+  branches CompanyBranch[]
 
   @@index([location])
   @@map("employer_profiles")
+}
+
+// ============================================================
+// COMPANY BRANCHES (Multi-location support)
+// ============================================================
+
+model CompanyBranch {
+  id           String   @id @default(cuid())
+  employerId   String
+  name         String
+  address      String
+  phone        String?
+  managerName  String?
+  managerPhone String?
+  isMain       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employer EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+
+  @@index([employerId])
+  @@map("company_branches")
 }
 
 // ============================================================
