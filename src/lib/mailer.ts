@@ -39,27 +39,39 @@ export async function sendApplicationEmail(data: ApplicationEmailData) {
     let cccdSection = '';
 
     if (data.cccdImageUrl) {
-        const localPath = path.join(process.cwd(), 'public', data.cccdImageUrl);
-
-        if (existsSync(localPath)) {
-            const imageBuffer = await readFile(localPath);
-            const ext = path.extname(localPath).slice(1) || 'jpg';
-            const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-
-            attachments.push({
-                filename: `cccd_${data.cccd}.${ext}`,
-                content: imageBuffer,
-                cid: 'cccd_image',
-                contentType: mimeType,
-            });
-
+        // CASE 1: Remote URL (Cloudinary, Placeholder, etc.)
+        if (data.cccdImageUrl.startsWith('http')) {
             cccdSection = `
             <tr>
                 <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
                     <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
-                    <img src="cid:cccd_image" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
+                    <img src="${data.cccdImageUrl}" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
                 </td>
             </tr>`;
+        }
+        // CASE 2: Local File (Development only)
+        else {
+            const localPath = path.join(process.cwd(), 'public', data.cccdImageUrl);
+            if (existsSync(localPath)) {
+                const imageBuffer = await readFile(localPath);
+                const ext = path.extname(localPath).slice(1) || 'jpg';
+                const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+
+                attachments.push({
+                    filename: `cccd_${data.cccd}.${ext}`,
+                    content: imageBuffer,
+                    cid: 'cccd_image',
+                    contentType: mimeType,
+                });
+
+                cccdSection = `
+                <tr>
+                    <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
+                        <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
+                        <img src="cid:cccd_image" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
+                    </td>
+                </tr>`;
+            }
         }
     }
 
