@@ -146,8 +146,8 @@ export async function POST(request: NextRequest) {
             isUrgent, expiresAt,
         } = body;
 
-        if (!title || !description || !location) {
-            return errorResponse('Thiếu thông tin bắt buộc', 400);
+        if (!title || !description) {
+            return errorResponse('Thiếu thông tin bắt buộc: Tiêu đề hoặc Mô tả', 400);
         }
 
         // Validate shifts array
@@ -178,6 +178,17 @@ export async function POST(request: NextRequest) {
             legacyShift = null;
         }
 
+        // Parse safely helper
+        const safeInt = (val: any) => {
+            const parsed = parseInt(val);
+            return isNaN(parsed) ? null : parsed;
+        };
+
+        const jobLocation = location || employer.address || employer.location || 'Phú Quốc'; // Fallback location
+
+        // Map shifts properly
+        // ... (existing logic logic kept but simplified below) ...
+
         const job = await prisma.job.create({
             data: {
                 employerId: employer.id,
@@ -185,18 +196,18 @@ export async function POST(request: NextRequest) {
                 description,
                 requirements,
                 benefits,
-                salaryMin: salaryMin ? parseInt(salaryMin) : null,
-                salaryMax: salaryMax ? parseInt(salaryMax) : null,
+                salaryMin: safeInt(salaryMin),
+                salaryMax: safeInt(salaryMax),
                 salaryNegotiable: salaryNegotiable || false,
-                location,
+                location: jobLocation,
                 district,
-                city,
+                city: city || 'Phú Quốc',
                 jobType: jobType || 'FULLTIME',
                 shift: legacyShift || null,
                 shifts: JSON.stringify(shiftsArray),
-                experienceRequired: experienceRequired ? parseInt(experienceRequired) : 0,
+                experienceRequired: safeInt(experienceRequired) || 0,
                 genderRequirement,
-                positions: positions ? parseInt(positions) : 1,
+                positions: safeInt(positions) || 1,
                 categoryId: categoryId || null,
                 isUrgent: isUrgent || false,
                 expiresAt: expiresAt ? new Date(expiresAt) : null,
@@ -213,9 +224,10 @@ export async function POST(request: NextRequest) {
         });
 
         return successResponse(job, 201);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create job error:', error);
-        return errorResponse('Đã xảy ra lỗi khi tạo tin tuyển dụng', 500);
+        // Return detailed error for debugging (remove in final production if sensitive)
+        return errorResponse(`Lỗi tạo tin: ${error.message || error}`, 500);
     }
 }
 
