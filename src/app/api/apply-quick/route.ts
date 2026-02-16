@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
             where: { id: jobId, status: 'ACTIVE' },
             include: {
                 employer: {
-                    select: { businessName: true, phone: true }
+                    select: {
+                        userId: true,
+                        businessName: true,
+                        phone: true,
+                        user: { select: { email: true } }
+                    }
                 }
             }
         });
@@ -74,8 +79,27 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        // Create In-App Notification for Employer
+        if (job.employer && job.employer.userId) {
+            try {
+                await prisma.notification.create({
+                    data: {
+                        userId: job.employer.userId,
+                        type: 'APPLICATION_NEW',
+                        title: 'Ứng viên mới',
+                        message: `${fullName} vừa ứng tuyển vào vị trí ${job.title}`,
+                        link: `/employer/applications`, // Link to list
+                        isRead: false,
+                    }
+                });
+            } catch (notifError) {
+                console.error('[QuickApply] Failed to create notification:', notifError);
+            }
+        }
+
         // Send email notification — pass local path so mailer can embed the image
         const baseUrl = request.nextUrl.origin || 'http://localhost:3000';
+        const employerEmail = job.employer?.user?.email || undefined;
 
         sendApplicationEmail({
             applicationId: application.id,
@@ -89,6 +113,7 @@ export async function POST(request: NextRequest) {
             cccdImageUrl: cccdImageUrl,
             appliedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
             baseUrl,
+            employerEmail,
         }).catch((err) => {
             console.error('[QuickApply] Email send error:', err);
         });

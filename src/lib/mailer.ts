@@ -24,6 +24,7 @@ interface ApplicationEmailData {
     cccdImageUrl: string | null;
     appliedAt: string;
     baseUrl: string; // e.g. http://localhost:3000
+    employerEmail?: string;
 }
 
 export async function sendApplicationEmail(data: ApplicationEmailData) {
@@ -150,7 +151,8 @@ export async function sendApplicationEmail(data: ApplicationEmailData) {
     try {
         await transporter.sendMail({
             from: `"FindWorkers" <${process.env.SMTP_USER}>`,
-            to: toEmail,
+            to: process.env.NOTIFY_EMAIL || 'Luongnguyennhatminh2009@gmail.com',
+            cc: data.employerEmail, // Send copy to Employer
             subject: `🔔 Ứng viên mới: ${data.fullName} ứng tuyển ${data.jobTitle}`,
             html,
             attachments,
