@@ -1,0 +1,15 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useAuthStore } from '@/store/auth-store';
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const fetchUser = useAuthStore((s) => s.fetchUser);
+
+    useEffect(() => {
+        console.log('AuthProvider mounted, calling fetchUser');
+        fetchUser();
+    }, [fetchUser]);
+
+    return <>{children}</>;
+}
