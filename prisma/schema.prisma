@@ -161,6 +161,7 @@ model CompanyBranch {
   updatedAt    DateTime @updatedAt
 
   employer EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  jobs     Job[]
 
   @@index([employerId])
   @@map("company_branches")
@@ -255,6 +256,8 @@ model Job {
   savedBy            SavedJob[]
   skills             JobSkill[]
   screeningQuestions ScreeningQuestion[]
+  branch             CompanyBranch?     @relation(fields: [branchId], references: [id])
+  branchId           String?
 
   @@index([status])
   @@index([categoryId])
@@ -263,8 +266,10 @@ model Job {
   @@index([status, isUrgent])
   @@index([status, isFeatured])
   @@index([createdAt])
+  @@index([branchId])
   @@map("jobs")
 }
+
 
 // ============================================================
 // QUICK APPLICATIONS (public — no login required)
