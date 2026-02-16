@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
 
         sendApplicationEmail({
             applicationId: application.id,
-            approveToken: application.approveToken,
+            approveToken: application.approveToken || '',
             jobTitle: job.title,
-            companyName: job.employer.businessName,
+            companyName: job.employer.businessName || 'Công ty ẩn danh',
             fullName: fullName.trim(),
             phone: phone.trim(),
             email: email.trim(),
