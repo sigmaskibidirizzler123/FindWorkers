@@ -160,19 +160,15 @@ export async function sendApplicationEmail(data: ApplicationEmailData) {
         </div>
     </div>`;
 
-    try {
-        await transporter.sendMail({
-            from: `"FindWorkers" <${process.env.SMTP_USER}>`,
-            to: process.env.NOTIFY_EMAIL || 'Luongnguyennhatminh2009@gmail.com',
-            cc: data.employerEmail, // Send copy to Employer
-            subject: `🔔 Ứng viên mới: ${data.fullName} ứng tuyển ${data.jobTitle}`,
-            html,
-            attachments,
-        });
-        console.log(`✅ [Email] Sent notification: ${data.fullName} → ${data.jobTitle}`);
-        return true;
-    } catch (error) {
-        console.error('❌ [Email] Failed to send:', error);
-        return false;
-    }
+    // Let errors propagate to caller for debugging
+    await transporter.sendMail({
+        from: `"FindWorkers" <${process.env.SMTP_USER}>`,
+        to: process.env.NOTIFY_EMAIL || 'Luongnguyennhatminh2009@gmail.com',
+        cc: data.employerEmail, // Send copy to Employer
+        subject: `🔔 Ứng viên mới: ${data.fullName} ứng tuyển ${data.jobTitle}`,
+        html,
+        attachments,
+    });
+    console.log(`✅ [Email] Sent notification: ${data.fullName} → ${data.jobTitle}`);
+    return true;
 }

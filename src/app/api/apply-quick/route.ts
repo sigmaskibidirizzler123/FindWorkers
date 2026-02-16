@@ -97,26 +97,30 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Send email notification — pass local path so mailer can embed the image
+        // Send email notification - AWAIT to debug errors
         const baseUrl = request.nextUrl.origin || 'http://localhost:3000';
         const employerEmail = job.employer?.user?.email || undefined;
 
-        sendApplicationEmail({
-            applicationId: application.id,
-            approveToken: application.approveToken || '',
-            jobTitle: job.title,
-            companyName: job.employer.businessName || 'Công ty ẩn danh',
-            fullName: fullName.trim(),
-            phone: phone.trim(),
-            email: email.trim(),
-            cccd: cccd.trim(),
-            cccdImageUrl: cccdImageUrl,
-            appliedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
-            baseUrl,
-            employerEmail,
-        }).catch((err) => {
-            console.error('[QuickApply] Email send error:', err);
-        });
+        try {
+            await sendApplicationEmail({
+                applicationId: application.id,
+                approveToken: application.approveToken || '',
+                jobTitle: job.title,
+                companyName: job.employer.businessName || 'Công ty ẩn danh',
+                fullName: fullName.trim(),
+                phone: phone.trim(),
+                email: email.trim(),
+                cccd: cccd.trim(),
+                cccdImageUrl: cccdImageUrl,
+                appliedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+                baseUrl,
+                employerEmail,
+            });
+        } catch (mailError: any) {
+            console.error('[QuickApply] Email send error:', mailError);
+            // Return error to user to see what's wrong with SMTP
+            return errorResponse(`Gửi đơn thành công nhưng LỖI EMAIL: ${mailError.message}`, 500);
+        }
 
         return successResponse({
             id: application.id,
