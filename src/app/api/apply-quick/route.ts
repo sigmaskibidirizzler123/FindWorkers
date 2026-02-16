@@ -49,22 +49,15 @@ export async function POST(request: NextRequest) {
         }
 
         // Upload CCCD image if provided
+        // Upload CCCD image if provided
         let cccdImageUrl: string | null = null;
+
+        // VERCEL FIX: Cannot write to disk in serverless environment.
+        // TODO: Implement Cloudinary or Vercel Blob for production image storage.
         if (cccdImage && cccdImage.size > 0) {
-            const { writeFile, mkdir } = await import('fs/promises');
-            const path = await import('path');
-
-            const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'cccd');
-            await mkdir(uploadsDir, { recursive: true });
-
-            const ext = cccdImage.name.split('.').pop() || 'jpg';
-            const filename = `cccd_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-            const filepath = path.join(uploadsDir, filename);
-
-            const buffer = Buffer.from(await cccdImage.arrayBuffer());
-            await writeFile(filepath, buffer);
-
-            cccdImageUrl = `/uploads/cccd/${filename}`;
+            console.log('[QuickApply] Received CCCD image:', cccdImage.name, cccdImage.size, 'bytes');
+            // Mock URL for now to prevent crash
+            cccdImageUrl = `https://placehold.co/600x400?text=CCCD+Uploaded`;
         }
 
         // Save to database with unique approve token
