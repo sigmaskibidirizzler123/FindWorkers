@@ -9,6 +9,7 @@ import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response';
 import { calculateAndStoreMatchingScore, logActivity } from '@/lib/automation';
 import { notifyNewApplication } from '@/lib/notifications';
+import { webhookService } from '@/lib/webhook';
 
 export async function GET(
     request: NextRequest,
@@ -203,6 +204,16 @@ export async function POST(
             { jobId, matchingScore: score },
             payload.userId
         );
+
+        // 🔔 Discord notification for admin
+        webhookService.notifyNewApplication({
+            candidateName: candidate.fullName,
+            candidatePhone: candidate.phone || 'N/A',
+            jobTitle: job.title,
+            employerName: job.employer.businessName,
+            applicationId: application.id,
+            jobId,
+        }).catch(err => console.error('[Webhook] Discord notify failed:', err));
 
         return successResponse({ ...application, matchingScore: score }, 201);
     } catch (error) {

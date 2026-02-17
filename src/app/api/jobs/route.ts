@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response';
-import { eventBus } from '@/lib/events';
+import { webhookService } from '@/lib/webhook';
 
 export async function GET(request: NextRequest) {
     try {
@@ -225,11 +225,17 @@ export async function POST(request: NextRequest) {
         });
 
         // 🔔 Notify admin via Discord when employer creates a job
-        eventBus.emit('job.created', {
-            jobId: job.id,
-            employerId: employer.id,
-            categoryId: categoryId || undefined,
-        });
+        const salary = (job as any).salaryMin && (job as any).salaryMax
+            ? `${((job as any).salaryMin / 1_000_000).toFixed(1)}M - ${((job as any).salaryMax / 1_000_000).toFixed(1)}M`
+            : 'Thỏa thuận';
+
+        webhookService.send('job.created', {
+            jobTitle: job.title,
+            employerName: job.employer.businessName,
+            location: (job as any).location || 'Phú Quốc',
+            salary,
+            message: `💼 TIN TUYỂN DỤNG MỚI\n\n📌 ${job.title}\n🏢 ${job.employer.businessName}\n📍 ${(job as any).location || 'Phú Quốc'}\n💰 ${salary}\n\n🔗 Xem: ${process.env.NEXT_PUBLIC_APP_URL || ''}/admin/jobs`,
+        }).catch(err => console.error('[Webhook] Discord notify failed:', err));
 
         return successResponse(job, 201);
     } catch (error: any) {
