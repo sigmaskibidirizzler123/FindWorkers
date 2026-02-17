@@ -1,61 +1,40 @@
-/**
- * Test webhook endpoint - for debugging Discord notifications
- * GET  - Check if DISCORD_WEBHOOK_URL is configured
- * POST - Send a test notification to Discord
- */
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-    const discordUrl = process.env.DISCORD_WEBHOOK_URL;
-    const n8nUrl = process.env.N8N_WEBHOOK_URL;
+const DISCORD_URL = process.env.DISCORD_WEBHOOK_URL
+    || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
 
+export async function GET() {
     return NextResponse.json({
-        discord_configured: !!discordUrl,
-        discord_url_preview: discordUrl ? discordUrl.substring(0, 50) + '...' : 'NOT SET',
-        n8n_configured: !!n8nUrl,
+        discord_url_set: !!process.env.DISCORD_WEBHOOK_URL,
+        using_fallback: !process.env.DISCORD_WEBHOOK_URL,
         node_env: process.env.NODE_ENV,
-        app_url: process.env.NEXT_PUBLIC_APP_URL,
     });
 }
 
 export async function POST() {
-    const discordUrl = process.env.DISCORD_WEBHOOK_URL;
-
-    if (!discordUrl) {
-        return NextResponse.json({
-            error: 'DISCORD_WEBHOOK_URL is NOT set in environment variables!',
-            fix: 'Go to Vercel → Settings → Environment Variables → Add DISCORD_WEBHOOK_URL',
-        }, { status: 400 });
-    }
-
     try {
-        const payload = {
-            username: 'FindWorkers Bot',
-            embeds: [{
-                title: '✅ Test Notification Thành Công!',
-                description: '🎉 Discord webhook đã được cấu hình đúng!\n\nKhi employer đăng tin hoặc ứng viên apply, bạn sẽ nhận thông báo ở đây.',
-                color: 5763719,
-                timestamp: new Date().toISOString(),
-                footer: { text: 'FindWorkers Alert System' },
-            }],
-        };
-
-        const response = await fetch(discordUrl, {
+        const response = await fetch(DISCORD_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({
+                username: 'FindWorkers Bot',
+                embeds: [{
+                    title: '✅ Test Notification Thành Công!',
+                    description: '🎉 Discord webhook đã hoạt động!\n\nKhi employer đăng tin, bạn sẽ nhận thông báo ở đây.',
+                    color: 5763719,
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'FindWorkers Alert System' },
+                }],
+            }),
         });
 
+        const text = await response.text();
         return NextResponse.json({
             success: response.ok,
             status: response.status,
-            statusText: response.statusText,
-            discord_url_preview: discordUrl.substring(0, 50) + '...',
+            response: text || '(empty = success)',
         });
     } catch (error: any) {
-        return NextResponse.json({
-            success: false,
-            error: error.message,
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
