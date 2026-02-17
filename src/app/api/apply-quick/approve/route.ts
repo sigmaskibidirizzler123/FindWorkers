@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { discordQuickApprove, discordQuickReject } from '@/lib/discord';
 
 export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
@@ -63,23 +64,8 @@ export async function GET(request: NextRequest) {
                 });
             }
 
-            // 🔔 Discord notification — approved
-            const discordUrl = process.env.DISCORD_WEBHOOK_URL
-                || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-            fetch(discordUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: 'FindWorkers Bot',
-                    embeds: [{
-                        title: '✅ Đã Duyệt Ứng Viên!',
-                        description: `👤 ${application.fullName}\n📞 ${application.phone}\n📧 ${application.email}\n📌 Vị trí: ${application.job.title}\n🏢 ${application.job.employer.businessName}`,
-                        color: 5763719,
-                        timestamp: new Date().toISOString(),
-                        footer: { text: 'FindWorkers Alert System' },
-                    }],
-                }),
-            }).catch(() => { });
+            // 🔔 Discord notification → #tin-tuyen-dung-moi
+            discordQuickApprove(application.fullName, application.phone, application.email, application.job.title, application.job.employer.businessName);
 
             return renderPage(
                 '✅ Đã duyệt hồ sơ!',
@@ -96,23 +82,8 @@ export async function GET(request: NextRequest) {
                 data: { status: 'REJECTED' }
             });
 
-            // 🔔 Discord notification — rejected
-            const discordUrlReject = process.env.DISCORD_WEBHOOK_URL
-                || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-            fetch(discordUrlReject, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: 'FindWorkers Bot',
-                    embeds: [{
-                        title: '❌ Đã Từ Chối Ứng Viên',
-                        description: `👤 ${application.fullName}\n📌 Vị trí: ${application.job.title}\n🏢 ${application.job.employer.businessName}`,
-                        color: 15548997,
-                        timestamp: new Date().toISOString(),
-                        footer: { text: 'FindWorkers Alert System' },
-                    }],
-                }),
-            }).catch(() => { });
+            // 🔔 Discord notification → #tin-tuyen-dung-moi
+            discordQuickReject(application.fullName, application.job.title, application.job.employer.businessName);
 
             return renderPage(
                 '❌ Đã từ chối hồ sơ',

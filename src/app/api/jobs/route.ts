@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response';
-import { webhookService } from '@/lib/webhook';
+import { discordJobPosted } from '@/lib/discord';
 
 export async function GET(request: NextRequest) {
     try {
@@ -229,25 +229,7 @@ export async function POST(request: NextRequest) {
             ? `${((job as any).salaryMin / 1_000_000).toFixed(1)}M - ${((job as any).salaryMax / 1_000_000).toFixed(1)}M`
             : 'Thỏa thuận';
 
-        const discordUrl = process.env.DISCORD_WEBHOOK_URL
-            || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-
-        fetch(discordUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'FindWorkers Bot',
-                embeds: [{
-                    title: '💼 Tin Tuyển Dụng Mới!',
-                    description: `📌 ${job.title}\n🏢 ${job.employer.businessName}\n📍 ${(job as any).location || 'Phú Quốc'}\n💰 ${salary}`,
-                    color: 5793266,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'FindWorkers Alert System' },
-                }],
-            }),
-        })
-            .then(res => console.log('[Discord] Sent! Status:', res.status))
-            .catch(err => console.error('[Discord] Failed:', err.message));
+        discordJobPosted(job.title, job.employer.businessName, (job as any).location || 'Phú Quốc', salary);
 
         return successResponse(job, 201);
     } catch (error: any) {

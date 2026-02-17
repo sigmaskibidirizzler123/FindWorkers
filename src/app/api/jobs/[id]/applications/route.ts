@@ -9,7 +9,7 @@ import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response';
 import { calculateAndStoreMatchingScore, logActivity } from '@/lib/automation';
 import { notifyNewApplication } from '@/lib/notifications';
-import { webhookService } from '@/lib/webhook';
+import { discordNewApplication } from '@/lib/discord';
 
 export async function GET(
     request: NextRequest,
@@ -202,26 +202,8 @@ export async function POST(
             payload.userId
         );
 
-        // 🔔 Discord notification for admin — candidate applied
-        const discordUrl = process.env.DISCORD_WEBHOOK_URL
-            || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-
-        fetch(discordUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'FindWorkers Bot',
-                embeds: [{
-                    title: '📋 Ứng Viên Mới Apply!',
-                    description: `👤 ${candidate.fullName}\n📞 ${candidate.phone || 'N/A'}\n📌 Vị trí: ${job.title}\n🏢 ${job.employer.businessName}`,
-                    color: 3447003,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'FindWorkers Alert System' },
-                }],
-            }),
-        })
-            .then(res => console.log('[Discord] Application notify sent! Status:', res.status))
-            .catch(err => console.error('[Discord] Application notify failed:', err.message));
+        // 🔔 Discord notification → #thong-bao-ung-tuyen
+        discordNewApplication(candidate.fullName, candidate.phone || 'N/A', '', job.title, job.employer.businessName);
 
         return successResponse({ ...application, matchingScore: score }, 201);
     } catch (error) {

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { sendApplicationEmail } from '@/lib/mailer';
+import { discordNewApplication } from '@/lib/discord';
 
 export async function POST(request: NextRequest) {
     try {
@@ -122,23 +123,8 @@ export async function POST(request: NextRequest) {
             return errorResponse(`Gửi đơn thành công nhưng LỖI EMAIL: ${mailError.message}`, 500);
         }
 
-        // 🔔 Discord notification — new quick application
-        const discordUrl = process.env.DISCORD_WEBHOOK_URL
-            || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-        fetch(discordUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'FindWorkers Bot',
-                embeds: [{
-                    title: '📨 Ứng Viên Mới (Quick Apply)!',
-                    description: `👤 ${fullName}\n📞 ${phone}\n📧 ${email}\n🪣 CCCD: ${cccd}\n📌 Vị trí: ${job.title}\n🏢 ${job.employer.businessName}`,
-                    color: 3447003,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'FindWorkers Alert System' },
-                }],
-            }),
-        }).catch(() => { });
+        // 🔔 Discord notification → #thong-bao-ung-tuyen
+        discordNewApplication(fullName.trim(), phone.trim(), email.trim(), job.title, job.employer.businessName || 'Công ty ẩn danh', cccd.trim());
 
         return successResponse({
             id: application.id,

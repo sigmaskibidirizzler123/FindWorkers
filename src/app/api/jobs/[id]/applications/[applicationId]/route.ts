@@ -9,6 +9,7 @@ import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import { onApplicationHired, logActivity } from '@/lib/automation';
 import { notifyApplicationStatus, notifyInterviewScheduled } from '@/lib/notifications';
+import { discordStatusChange } from '@/lib/discord';
 
 export async function PATCH(
     request: NextRequest,
@@ -126,40 +127,8 @@ export async function PATCH(
             payload.userId
         );
 
-        // 🔔 Discord notification — status change
-        const statusLabels: Record<string, string> = {
-            'REVIEWED': '👁️ Đã xem',
-            'SHORTLISTED': '⭐ Chọn lọc',
-            'INTERVIEW': '📅 Phỏng vấn',
-            'HIRED': '🎉 Đã tuyển',
-            'REJECTED': '❌ Từ chối',
-        };
-        const statusColors: Record<string, number> = {
-            'REVIEWED': 7506394,
-            'SHORTLISTED': 16776960,
-            'INTERVIEW': 3447003,
-            'HIRED': 5763719,
-            'REJECTED': 15548997,
-        };
-        const discordUrl = process.env.DISCORD_WEBHOOK_URL
-            || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
-
-        fetch(discordUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'FindWorkers Bot',
-                embeds: [{
-                    title: `${statusLabels[status] || status} — Cập nhật hồ sơ`,
-                    description: `👤 ${application.candidate.fullName}\n📌 Vị trí: ${job.title}\n🏢 ${(job as any).employer.businessName}\n\n📊 ${previousStatus} → **${status}**`,
-                    color: statusColors[status] || 7506394,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'FindWorkers Alert System' },
-                }],
-            }),
-        })
-            .then(res => console.log('[Discord] Status change sent! Status:', res.status))
-            .catch(err => console.error('[Discord] Status change failed:', err.message));
+        // 🔔 Discord notification → #tin-tuyen-dung-moi
+        discordStatusChange(application.candidate.fullName, job.title, (job as any).employer.businessName, previousStatus, status);
 
         return successResponse(application);
     } catch (error) {
