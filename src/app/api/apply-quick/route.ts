@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Send email notification - AWAIT to debug errors
-        const baseUrl = request.nextUrl.origin || 'http://localhost:3000';
+        // Use production URL so approve links always go to latest deployment
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://find-workers-p7ka.vercel.app';
         const employerEmail = job.employer?.user?.email || undefined;
 
         try {
@@ -121,6 +121,24 @@ export async function POST(request: NextRequest) {
             // Return error to user to see what's wrong with SMTP
             return errorResponse(`Gửi đơn thành công nhưng LỖI EMAIL: ${mailError.message}`, 500);
         }
+
+        // 🔔 Discord notification — new quick application
+        const discordUrl = process.env.DISCORD_WEBHOOK_URL
+            || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
+        fetch(discordUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: 'FindWorkers Bot',
+                embeds: [{
+                    title: '📨 Ứng Viên Mới (Quick Apply)!',
+                    description: `👤 ${fullName}\n📞 ${phone}\n📧 ${email}\n🪣 CCCD: ${cccd}\n📌 Vị trí: ${job.title}\n🏢 ${job.employer.businessName}`,
+                    color: 3447003,
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'FindWorkers Alert System' },
+                }],
+            }),
+        }).catch(() => { });
 
         return successResponse({
             id: application.id,
