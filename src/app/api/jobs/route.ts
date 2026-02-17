@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse, paginatedResponse } from '@/lib/api-response';
+import { eventBus } from '@/lib/events';
 
 export async function GET(request: NextRequest) {
     try {
@@ -221,6 +222,13 @@ export async function POST(request: NextRequest) {
                 },
                 category: true,
             },
+        });
+
+        // 🔔 Notify admin via Discord when employer creates a job
+        eventBus.emit('job.created', {
+            jobId: job.id,
+            employerId: employer.id,
+            categoryId: categoryId || undefined,
         });
 
         return successResponse(job, 201);
