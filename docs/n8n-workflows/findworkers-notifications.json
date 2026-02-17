@@ -1,0 +1,308 @@
+{
+    "name": "FindWorkers - Real-time Notifications",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "findworkers-events",
+                "responseMode": "onReceived",
+                "responseCode": 200
+            },
+            "id": "webhook-trigger",
+            "name": "🔔 Webhook Trigger",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.event }}",
+                            "operation": "contains",
+                            "value2": "application"
+                        }
+                    ]
+                }
+            },
+            "id": "if-application",
+            "name": "📋 Is Application?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.event }}",
+                            "operation": "contains",
+                            "value2": "employer"
+                        }
+                    ]
+                }
+            },
+            "id": "if-employer",
+            "name": "🏢 Is Employer?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ $json.event }}",
+                            "operation": "contains",
+                            "value2": "system"
+                        }
+                    ]
+                }
+            },
+            "id": "if-system",
+            "name": "🚨 Is System Alert?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                450,
+                800
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "message",
+                            "value": "={{ $json.data.message || '🔔 New FindWorkers Event: ' + $json.event }}"
+                        }
+                    ]
+                }
+            },
+            "id": "format-application",
+            "name": "📝 Format Application Alert",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                700,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "message",
+                            "value": "={{ $json.data.message || '🏢 New Employer Event: ' + $json.event }}"
+                        }
+                    ]
+                }
+            },
+            "id": "format-employer",
+            "name": "📝 Format Employer Alert",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                700,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "values": {
+                    "string": [
+                        {
+                            "name": "message",
+                            "value": "={{ $json.data.message || '🚨 System Alert: ' + $json.event }}"
+                        }
+                    ]
+                }
+            },
+            "id": "format-system",
+            "name": "📝 Format System Alert",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 1,
+            "position": [
+                700,
+                800
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_TELEGRAM_CHAT_ID",
+                "text": "={{ $json.message }}",
+                "additionalFields": {
+                    "parse_mode": "HTML"
+                }
+            },
+            "id": "telegram-send-application",
+            "name": "📱 Telegram (Application)",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                950,
+                200
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_TELEGRAM_CHAT_ID",
+                "text": "={{ $json.message }}",
+                "additionalFields": {
+                    "parse_mode": "HTML"
+                }
+            },
+            "id": "telegram-send-employer",
+            "name": "📱 Telegram (Employer)",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                950,
+                500
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "chatId": "YOUR_TELEGRAM_CHAT_ID",
+                "text": "={{ $json.message }}",
+                "additionalFields": {
+                    "parse_mode": "HTML"
+                }
+            },
+            "id": "telegram-send-system",
+            "name": "📱 Telegram (System)",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                950,
+                800
+            ],
+            "credentials": {
+                "telegramApi": {
+                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+                    "name": "Telegram Bot"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "🔔 Webhook Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "📋 Is Application?",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "🏢 Is Employer?",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "🚨 Is System Alert?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "📋 Is Application?": {
+            "main": [
+                [
+                    {
+                        "node": "📝 Format Application Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "🏢 Is Employer?": {
+            "main": [
+                [
+                    {
+                        "node": "📝 Format Employer Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "🚨 Is System Alert?": {
+            "main": [
+                [
+                    {
+                        "node": "📝 Format System Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                []
+            ]
+        },
+        "📝 Format Application Alert": {
+            "main": [
+                [
+                    {
+                        "node": "📱 Telegram (Application)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "📝 Format Employer Alert": {
+            "main": [
+                [
+                    {
+                        "node": "📱 Telegram (Employer)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "📝 Format System Alert": {
+            "main": [
+                [
+                    {
+                        "node": "📱 Telegram (System)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "settings": {
+        "executionOrder": "v1"
+    }
+}

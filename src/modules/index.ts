@@ -6,6 +6,7 @@
  */
 
 import { registerEventHandlers } from './automation/event-handlers';
+import { registerWebhookHandlers } from '@/lib/webhook-handlers';
 import { automationLogger } from '@/lib/logger';
 
 let initialized = false;
@@ -17,6 +18,9 @@ export function initializeModules() {
 
     // Register all event handlers
     registerEventHandlers();
+
+    // Register webhook handlers (FindWorkers → n8n → Telegram/Messenger)
+    registerWebhookHandlers();
 
     initialized = true;
     automationLogger.info('Modules initialized successfully');
