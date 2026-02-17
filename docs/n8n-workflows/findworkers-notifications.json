@@ -1,5 +1,5 @@
 {
-    "name": "FindWorkers - Real-time Notifications",
+    "name": "FindWorkers - Real-time Notifications (Discord)",
     "nodes": [
         {
             "parameters": {
@@ -82,132 +82,54 @@
         },
         {
             "parameters": {
-                "values": {
-                    "string": [
-                        {
-                            "name": "message",
-                            "value": "={{ $json.data.message || '🔔 New FindWorkers Event: ' + $json.event }}"
-                        }
-                    ]
-                }
+                "method": "POST",
+                "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ username: 'FindWorkers Bot', avatar_url: 'https://cdn-icons-png.flaticon.com/512/3135/3135692.png', embeds: [{ title: '🔥 Ứng Viên Mới Apply!', description: $json.data.message || 'New application received', color: 16744448, fields: [ { name: '👤 Ứng viên', value: $json.data.candidateName || 'N/A', inline: true }, { name: '💼 Vị trí', value: $json.data.jobTitle || 'N/A', inline: true }, { name: '📱 SĐT', value: $json.data.candidatePhone || 'N/A', inline: true }, { name: '🏢 Doanh nghiệp', value: $json.data.employerName || 'N/A', inline: true } ], timestamp: $json.timestamp, footer: { text: 'FindWorkers Alert System' } }] }) }}"
             },
-            "id": "format-application",
-            "name": "📝 Format Application Alert",
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 1,
+            "id": "discord-application",
+            "name": "💬 Discord (Application)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
-                700,
+                750,
                 200
             ]
         },
         {
             "parameters": {
-                "values": {
-                    "string": [
-                        {
-                            "name": "message",
-                            "value": "={{ $json.data.message || '🏢 New Employer Event: ' + $json.event }}"
-                        }
-                    ]
-                }
+                "method": "POST",
+                "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ username: 'FindWorkers Bot', avatar_url: 'https://cdn-icons-png.flaticon.com/512/3135/3135692.png', embeds: [{ title: '🏢 Doanh Nghiệp Mới!', description: $json.data.message || 'New employer registered', color: 3447003, fields: [ { name: '🏪 Tên DN', value: $json.data.businessName || 'N/A', inline: true }, { name: '📱 SĐT', value: $json.data.phone || 'N/A', inline: true }, { name: '📍 Địa chỉ', value: $json.data.location || 'N/A', inline: true } ], timestamp: $json.timestamp, footer: { text: 'FindWorkers Alert System' } }] }) }}"
             },
-            "id": "format-employer",
-            "name": "📝 Format Employer Alert",
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 1,
+            "id": "discord-employer",
+            "name": "💬 Discord (Employer)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
-                700,
+                750,
                 500
             ]
         },
         {
             "parameters": {
-                "values": {
-                    "string": [
-                        {
-                            "name": "message",
-                            "value": "={{ $json.data.message || '🚨 System Alert: ' + $json.event }}"
-                        }
-                    ]
-                }
+                "method": "POST",
+                "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ username: 'FindWorkers ALERT', avatar_url: 'https://cdn-icons-png.flaticon.com/512/564/564619.png', content: '@everyone', embeds: [{ title: '🚨 System Alert!', description: $json.data.message || 'System error detected', color: 15158332, fields: [ { name: '📌 Type', value: $json.data.errorType || $json.event, inline: true }, { name: '⚠️ Severity', value: $json.data.severity || 'unknown', inline: true } ], timestamp: $json.timestamp, footer: { text: 'FindWorkers Alert System' } }] }) }}"
             },
-            "id": "format-system",
-            "name": "📝 Format System Alert",
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 1,
+            "id": "discord-system",
+            "name": "💬 Discord (System Alert)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
-                700,
+                750,
                 800
             ]
-        },
-        {
-            "parameters": {
-                "chatId": "YOUR_TELEGRAM_CHAT_ID",
-                "text": "={{ $json.message }}",
-                "additionalFields": {
-                    "parse_mode": "HTML"
-                }
-            },
-            "id": "telegram-send-application",
-            "name": "📱 Telegram (Application)",
-            "type": "n8n-nodes-base.telegram",
-            "typeVersion": 1,
-            "position": [
-                950,
-                200
-            ],
-            "credentials": {
-                "telegramApi": {
-                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
-                    "name": "Telegram Bot"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "chatId": "YOUR_TELEGRAM_CHAT_ID",
-                "text": "={{ $json.message }}",
-                "additionalFields": {
-                    "parse_mode": "HTML"
-                }
-            },
-            "id": "telegram-send-employer",
-            "name": "📱 Telegram (Employer)",
-            "type": "n8n-nodes-base.telegram",
-            "typeVersion": 1,
-            "position": [
-                950,
-                500
-            ],
-            "credentials": {
-                "telegramApi": {
-                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
-                    "name": "Telegram Bot"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "chatId": "YOUR_TELEGRAM_CHAT_ID",
-                "text": "={{ $json.message }}",
-                "additionalFields": {
-                    "parse_mode": "HTML"
-                }
-            },
-            "id": "telegram-send-system",
-            "name": "📱 Telegram (System)",
-            "type": "n8n-nodes-base.telegram",
-            "typeVersion": 1,
-            "position": [
-                950,
-                800
-            ],
-            "credentials": {
-                "telegramApi": {
-                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
-                    "name": "Telegram Bot"
-                }
-            }
         }
     ],
     "connections": {
@@ -236,7 +158,7 @@
             "main": [
                 [
                     {
-                        "node": "📝 Format Application Alert",
+                        "node": "💬 Discord (Application)",
                         "type": "main",
                         "index": 0
                     }
@@ -248,7 +170,7 @@
             "main": [
                 [
                     {
-                        "node": "📝 Format Employer Alert",
+                        "node": "💬 Discord (Employer)",
                         "type": "main",
                         "index": 0
                     }
@@ -260,45 +182,12 @@
             "main": [
                 [
                     {
-                        "node": "📝 Format System Alert",
+                        "node": "💬 Discord (System Alert)",
                         "type": "main",
                         "index": 0
                     }
                 ],
                 []
-            ]
-        },
-        "📝 Format Application Alert": {
-            "main": [
-                [
-                    {
-                        "node": "📱 Telegram (Application)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "📝 Format Employer Alert": {
-            "main": [
-                [
-                    {
-                        "node": "📱 Telegram (Employer)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "📝 Format System Alert": {
-            "main": [
-                [
-                    {
-                        "node": "📱 Telegram (System)",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
             ]
         }
     },

@@ -99,12 +99,13 @@ class WebhookService {
     }
 
     /**
-     * Send event to all configured webhooks
+     * Send event to all configured webhooks + Discord fallback
      */
     async send(event: WebhookEventType, data: Record<string, unknown>): Promise<void> {
         const urls = this.getWebhookUrls();
+        const discordUrl = process.env.DISCORD_WEBHOOK_URL;
 
-        if (urls.length === 0) {
+        if (urls.length === 0 && !discordUrl) {
             automationLogger.debug(`[Webhook] No webhook URLs configured, skipping event: ${event}`);
             return;
         }
@@ -129,18 +130,80 @@ class WebhookService {
             },
         };
 
-        // Send to all URLs concurrently (fire-and-forget)
-        const results = await Promise.allSettled(
-            urls.map(url => this.sendToUrl(url, payload))
-        );
+        const promises: Promise<void>[] = [];
+
+        // Send to n8n webhooks
+        promises.push(...urls.map(url => this.sendToUrl(url, payload)));
+
+        // Direct Discord fallback (if no n8n, or as additional channel)
+        if (discordUrl) {
+            promises.push(this.sendToDiscord(discordUrl, event, data));
+        }
+
+        const results = await Promise.allSettled(promises);
 
         const failures = results.filter(r => r.status === 'rejected');
         if (failures.length > 0) {
-            automationLogger.error(`[Webhook] ${failures.length}/${urls.length} webhooks failed for ${event}`, {
+            automationLogger.error(`[Webhook] ${failures.length} webhook(s) failed for ${event}`, {
                 eventId,
                 failures: failures.map(f => (f as PromiseRejectedResult).reason?.message),
             });
         }
+    }
+
+    /**
+     * Send directly to Discord with rich embeds (no n8n needed)
+     */
+    private async sendToDiscord(url: string, event: WebhookEventType, data: Record<string, unknown>): Promise<void> {
+        const colorMap: Record<string, number> = {
+            'application.new': 16744448,       // Orange
+            'application.hired': 5763719,      // Green
+            'application.status_changed': 3447003, // Blue
+            'employer.registered': 3447003,    // Blue
+            'employer.created_by_admin': 3447003,
+            'job.created': 5793266,            // Teal
+            'job.closed': 10070709,            // Gray
+            'system.error': 15158332,          // Red
+            'system.alert': 15158332,
+            'daily.summary': 10181046,         // Purple
+        };
+
+        const titleMap: Record<string, string> = {
+            'application.new': '🔥 Ứng Viên Mới Apply!',
+            'application.hired': '✅ Tuyển Dụng Thành Công!',
+            'application.status_changed': '📋 Cập Nhật Ứng Tuyển',
+            'employer.registered': '🏢 Doanh Nghiệp Mới Đăng Ký!',
+            'employer.created_by_admin': '🏢 Admin Tạo Doanh Nghiệp Mới',
+            'job.created': '💼 Tin Tuyển Dụng Mới!',
+            'job.closed': '🔒 Tin Tuyển Dụng Đã Đóng',
+            'system.error': '🚨 Lỗi Hệ Thống!',
+            'system.alert': '⚠️ Cảnh Báo Hệ Thống',
+            'daily.summary': '📊 Báo Cáo Ngày',
+        };
+
+        const discordPayload = {
+            username: 'FindWorkers Bot',
+            avatar_url: 'https://cdn-icons-png.flaticon.com/512/3135/3135692.png',
+            embeds: [{
+                title: titleMap[event] || `🔔 ${event}`,
+                description: String(data.message || ''),
+                color: colorMap[event] || 3447003,
+                timestamp: new Date().toISOString(),
+                footer: { text: 'FindWorkers Alert System' },
+            }],
+        };
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(discordPayload),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Discord webhook failed: HTTP ${response.status}`);
+        }
+
+        automationLogger.info(`[Webhook] ✅ Discord notification sent for ${event}`);
     }
 
     /**

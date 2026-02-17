@@ -1,6 +1,6 @@
 # 🔔 FindWorkers Automation - Setup Guide
 
-## Kiến Trúc Tổng Thể (Level 2 - Direct Webhook)
+## Kiến Trúc Tổng Thể
 
 ```
 FindWorkers App
@@ -9,41 +9,49 @@ WebhookService  ──POST──→  n8n Webhook
                                 ↓
                            Filter + Format
                                 ↓
-                         Telegram / Messenger
+                          Discord Webhook
                                 ↓
                     Bạn nhận thông báo real-time 🎉
 ```
 
-**Không cần Gmail!** Hệ thống bắn event trực tiếp từ ứng dụng.
+**Không cần Gmail!** Hệ thống bắn event trực tiếp.
 
 ---
 
-## 📋 Bước 1: Cấu hình Environment Variables
+## 📋 Bước 1: Tạo Discord Webhook (30 giây)
 
-Thêm vào **Vercel Environment Variables** (hoặc `.env`):
+1. Mở **Discord** → Tạo server hoặc dùng server có sẵn
+2. Vào channel bạn muốn nhận thông báo (ví dụ: `#findworkers-alerts`)
+3. Click **⚙️ Edit Channel** → **Integrations** → **Webhooks**
+4. Click **New Webhook**
+5. Đặt tên: `FindWorkers Bot`
+6. **Copy Webhook URL** → Lưu lại
 
-```env
-# n8n Webhook URL (lấy từ n8n sau khi tạo workflow)
-N8N_WEBHOOK_URL=https://your-n8n-domain.com/webhook/findworkers-events
-
-# Secret để xác thực (tùy chọn, khuyên dùng)
-WEBHOOK_SECRET=your-secret-key-here
-
-# Backup webhook (tùy chọn)
-# N8N_WEBHOOK_URL_BACKUP=https://backup-n8n.com/webhook/findworkers-events
+URL sẽ có dạng:
+```
+https://discord.com/api/webhooks/1234567890/abcdefghijk...
 ```
 
 ---
 
-## 📋 Bước 2: Tạo Telegram Bot
+## 📋 Bước 2: Cấu hình Environment Variables
 
-1. Mở Telegram, tìm **@BotFather**
-2. Gửi `/newbot`
-3. Đặt tên: `FindWorkers Alert Bot`
-4. Nhận **Bot Token** (dạng `123456:ABC-DEF...`)
-5. Mở bot vừa tạo, gửi `/start`
-6. Truy cập: `https://api.telegram.org/bot<TOKEN>/getUpdates`
-7. Tìm `chat.id` → Đây là **CHAT_ID** của bạn
+Thêm vào **Vercel Environment Variables**:
+
+```env
+# n8n Webhook URL (lấy từ n8n sau khi import workflow)
+N8N_WEBHOOK_URL=https://your-n8n-domain.com/webhook/findworkers-events
+
+# Secret để xác thực (tùy chọn nhưng khuyên dùng)
+WEBHOOK_SECRET=your-secret-key-here
+```
+
+Trong **n8n Environment Variables**:
+```env
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR_WEBHOOK_URL
+FINDWORKERS_API_URL=https://find-workers.vercel.app
+WEBHOOK_SECRET=your-secret-key-here
+```
 
 ---
 
@@ -51,65 +59,79 @@ WEBHOOK_SECRET=your-secret-key-here
 
 ### Workflow 1: Real-time Notifications
 1. Mở n8n → **Import from file**
-2. Chọn file: `docs/n8n-workflows/findworkers-notifications.json`
-3. Thay thế:
-   - `YOUR_TELEGRAM_CHAT_ID` → Chat ID từ Bước 2
-   - `YOUR_TELEGRAM_CREDENTIAL_ID` → Credential ID trong n8n
+2. Chọn: `docs/n8n-workflows/findworkers-notifications.json`
+3. Set n8n env: `DISCORD_WEBHOOK_URL` = URL từ Bước 1
 4. **Activate** workflow
-5. Copy **Webhook URL** → Paste vào `N8N_WEBHOOK_URL` (Bước 1)
+5. Copy **Webhook URL** từ node "🔔 Webhook Trigger"
+6. Paste vào Vercel env: `N8N_WEBHOOK_URL`
 
 ### Workflow 2: Daily Summary (9PM hàng ngày)
-1. Import file: `docs/n8n-workflows/findworkers-daily-summary.json`
-2. Thay thế Chat ID và credential
-3. Set environment variable trong n8n:
-   - `FINDWORKERS_API_URL` = `https://find-workers.vercel.app`
-   - `WEBHOOK_SECRET` = Secret từ Bước 1
-4. **Activate** workflow
+1. Import: `docs/n8n-workflows/findworkers-daily-summary.json`
+2. Set n8n env: `DISCORD_WEBHOOK_URL` + `FINDWORKERS_API_URL`
+3. **Activate** workflow
 
 ---
 
 ## 📋 Bước 4: Test
 
-### Test Webhook connectivity:
+### Test API:
 ```bash
 curl https://find-workers.vercel.app/api/webhooks/n8n
-# Expected: {"success":true,"data":{"status":"ok",...}}
+# → {"success":true,"data":{"status":"ok",...}}
 ```
 
 ### Test Daily Summary:
 ```bash
 curl -X POST https://find-workers.vercel.app/api/webhooks/n8n \
   -H "Content-Type: application/json" \
-  -H "x-webhook-secret: your-secret" \
   -d '{"action":"daily_summary"}'
 ```
 
-### Test n8n Webhook (gửi event giả):
+### Test Discord trực tiếp:
 ```bash
-curl -X POST https://your-n8n.com/webhook/findworkers-events \
+curl -X POST YOUR_DISCORD_WEBHOOK_URL \
   -H "Content-Type: application/json" \
   -d '{
-    "event": "application.new",
-    "timestamp": "2024-01-01T00:00:00Z",
-    "data": {
-      "message": "🔥 TEST: Ứng viên mới apply!"
-    }
+    "username": "FindWorkers Test",
+    "embeds": [{
+      "title": "🔥 Test Alert!",
+      "description": "Nếu thấy message này = Discord webhook hoạt động!",
+      "color": 16744448
+    }]
   }'
 ```
 
 ---
 
-## 🔄 Events Được Gửi Tự Động
+## 🔄 Events Tự Động
 
-| Event | Khi nào | Thông tin |
-|-------|---------|-----------|
-| `application.new` | Ứng viên apply job | Tên, SĐT, Job, Employer |
-| `application.hired` | Employer tuyển ứng viên | Tên UV, Job, Employer |
-| `employer.registered` | Employer tự đăng ký | Tên DN, SĐT, Địa chỉ |
-| `employer.created_by_admin` | Admin tạo employer | Tên DN, SĐT, Địa chỉ |
-| `job.created` | Employer đăng tin | Tên tin, Employer, Lương |
-| `system.error` | Lỗi hệ thống | Loại lỗi, Message, Severity |
-| `daily.summary` | n8n gọi báo cáo ngày | Tổng hợp số liệu |
+| Event | Khi nào | Discord Color |
+|-------|---------|---------------|
+| 🔥 `application.new` | Ứng viên apply job | 🟠 Orange |
+| ✅ `application.hired` | Tuyển thành công | 🟢 Green |
+| 🏢 `employer.registered` | DN đăng ký mới | 🔵 Blue |
+| 💼 `job.created` | Đăng tin mới | 🔵 Blue |
+| 🚨 `system.error` | Lỗi hệ thống | 🔴 Red |
+| 📊 `daily.summary` | Báo cáo 9PM | 🟣 Purple |
+
+---
+
+## 🎨 Discord Embed Preview
+
+Thông báo sẽ hiển thị dạng **rich embed**:
+
+```
+╔══════════════════════════════════╗
+║ 🔥 Ứng Viên Mới Apply!         ║
+║                                  ║
+║ 👤 Ứng viên: Nguyễn Văn A       ║
+║ 💼 Vị trí:   Phục vụ bàn        ║
+║ 📱 SĐT:      0907xxxxxx         ║
+║ 🏢 DN:       Quán Cafe ABC      ║
+║                                  ║
+║ FindWorkers Alert System         ║
+╚══════════════════════════════════╝
+```
 
 ---
 
@@ -117,25 +139,35 @@ curl -X POST https://your-n8n.com/webhook/findworkers-events \
 
 ```
 src/lib/
-├── webhook.ts              # WebhookService - gửi events ra ngoài
-├── webhook-handlers.ts     # Kết nối EventBus → WebhookService
-├── events.ts               # EventBus (đã có sẵn)
-└── logger.ts               # Logger (đã có sẵn)
+├── webhook.ts              # WebhookService - gửi events
+├── webhook-handlers.ts     # EventBus → WebhookService
+├── events.ts               # EventBus (đã có)
+└── logger.ts               # Logger (đã có)
 
 src/app/api/webhooks/
-└── n8n/route.ts            # API cho n8n gọi ngược vào
+└── n8n/route.ts            # API cho n8n callback
 
 docs/n8n-workflows/
-├── findworkers-notifications.json    # Workflow real-time alerts
-└── findworkers-daily-summary.json    # Workflow báo cáo ngày
+├── findworkers-notifications.json   # Real-time alerts → Discord
+├── findworkers-daily-summary.json   # Báo cáo ngày → Discord
+└── SETUP.md                         # File này
 ```
+
+---
+
+## ⚡ Không dùng n8n? Gửi thẳng Discord!
+
+Nếu không muốn dùng n8n, bạn có thể gửi trực tiếp đến Discord bằng cách:
+
+1. Đặt env: `DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...`
+2. WebhookService sẽ tự gửi trực tiếp (không cần n8n trung gian)
 
 ---
 
 ## 🚀 Nâng Cấp Tiếp Theo
 
-1. **Messenger thay Telegram**: Thêm Facebook Graph API node trong n8n
-2. **VIP Priority**: Thêm filter trong n8n cho employer VIP
-3. **Anti-spam**: Thêm Function node check duplicate
-4. **BullMQ Queue**: Chuyển từ HTTP webhook sang message queue
-5. **Multiple channels**: Gửi cả Telegram + Email + SMS
+1. **Thêm channel riêng**: `#applications`, `#employers`, `#system-alerts`
+2. **Zalo OA**: Thêm Zalo notification cho thị trường VN
+3. **BullMQ Queue**: Message queue cho high-traffic
+4. **AI Filter**: Dùng OpenAI trong n8n lọc spam
+5. **VIP Priority**: Alert riêng cho employer VIP

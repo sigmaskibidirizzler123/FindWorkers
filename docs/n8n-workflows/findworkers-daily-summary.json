@@ -1,5 +1,5 @@
 {
-    "name": "FindWorkers - Daily Summary Report",
+    "name": "FindWorkers - Daily Summary Report (Discord)",
     "nodes": [
         {
             "parameters": {
@@ -39,14 +39,7 @@
                     ]
                 },
                 "sendBody": true,
-                "bodyParameters": {
-                    "parameters": [
-                        {
-                            "name": "action",
-                            "value": "daily_summary"
-                        }
-                    ]
-                },
+                "specifyBody": "json",
                 "jsonBody": "{\"action\": \"daily_summary\"}"
             },
             "id": "fetch-summary",
@@ -60,44 +53,20 @@
         },
         {
             "parameters": {
-                "values": {
-                    "string": [
-                        {
-                            "name": "message",
-                            "value": "={{ $json.data.message }}"
-                        }
-                    ]
-                }
+                "method": "POST",
+                "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ username: 'FindWorkers Daily Report', avatar_url: 'https://cdn-icons-png.flaticon.com/512/2920/2920686.png', embeds: [{ title: '📊 Báo Cáo Ngày ' + ($json.data?.date || new Date().toISOString().split('T')[0]), color: 5793266, fields: [ { name: '📋 Đơn ứng tuyển', value: String($json.data?.totalApplications || 0), inline: true }, { name: '💼 Tin tuyển dụng mới', value: String($json.data?.totalNewJobs || 0), inline: true }, { name: '🏢 Doanh nghiệp mới', value: String($json.data?.totalNewEmployers || 0), inline: true }, { name: '👤 Ứng viên mới', value: String($json.data?.totalNewCandidates || 0), inline: true }, { name: '✅ Đã tuyển', value: String($json.data?.hiredToday || 0), inline: true } ], timestamp: new Date().toISOString(), footer: { text: 'FindWorkers Daily Summary' } }] }) }}"
             },
-            "id": "format-summary",
-            "name": "📝 Format Summary",
-            "type": "n8n-nodes-base.set",
-            "typeVersion": 1,
+            "id": "discord-summary",
+            "name": "💬 Send to Discord",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 3,
             "position": [
-                700,
+                750,
                 300
             ]
-        },
-        {
-            "parameters": {
-                "chatId": "YOUR_TELEGRAM_CHAT_ID",
-                "text": "={{ $json.message }}",
-                "additionalFields": {}
-            },
-            "id": "telegram-summary",
-            "name": "📱 Send to Telegram",
-            "type": "n8n-nodes-base.telegram",
-            "typeVersion": 1,
-            "position": [
-                950,
-                300
-            ],
-            "credentials": {
-                "telegramApi": {
-                    "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
-                    "name": "Telegram Bot"
-                }
-            }
         }
     ],
     "connections": {
@@ -116,18 +85,7 @@
             "main": [
                 [
                     {
-                        "node": "📝 Format Summary",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "📝 Format Summary": {
-            "main": [
-                [
-                    {
-                        "node": "📱 Send to Telegram",
+                        "node": "💬 Send to Discord",
                         "type": "main",
                         "index": 0
                     }
