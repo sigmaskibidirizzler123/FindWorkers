@@ -99,20 +99,40 @@ export default function AdminDashboardPage() {
         address: '',
     });
 
-    // Demo stats
-    const systemStats = {
-        totalUsers: 50_420,
-        totalJobs: 12_380,
-        totalCompanies: 3_150,
-        totalApplications: 145_600,
-        activeToday: 2_340,
-        jobsCreatedToday: 156,
-    };
+    // System stats from API
+    const [systemStats, setSystemStats] = useState({
+        totalUsers: 0,
+        totalJobs: 0,
+        totalCompanies: 0,
+        totalApplications: 0,
+        activeToday: 0,
+        jobsCreatedToday: 0,
+    });
 
     useEffect(() => {
         fetchFlags();
         fetchEmployers();
+        fetchStats();
     }, []);
+
+    // ═══ FETCH REAL STATS ═══
+    const fetchStats = async () => {
+        try {
+            const res = await fetch('/api/admin/analytics', { credentials: 'include' });
+            const data = await res.json();
+            if (data.success) {
+                const k = data.data.kpis;
+                setSystemStats({
+                    totalUsers: k.totalUsers || 0,
+                    totalJobs: k.totalJobs || 0,
+                    totalCompanies: k.totalEmployers || 0,
+                    totalApplications: k.totalApplications || 0,
+                    activeToday: k.applicationsToday || 0,
+                    jobsCreatedToday: k.jobsLast7Days || 0,
+                });
+            }
+        } catch { /* silent */ }
+    };
 
     // ═══ EMPLOYER MANAGEMENT ═══
     const fetchEmployers = async () => {
@@ -282,8 +302,8 @@ export default function AdminDashboardPage() {
                     <button
                         onClick={() => { setShowCreateForm(!showCreateForm); setCreatedResult(null); setCreateError(''); }}
                         className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${showCreateForm
-                                ? 'bg-white/5 text-slate-300 hover:bg-white/10'
-                                : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/20'
+                            ? 'bg-white/5 text-slate-300 hover:bg-white/10'
+                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-500 hover:to-indigo-500 shadow-lg shadow-purple-500/20'
                             }`}
                     >
                         {showCreateForm ? <><X className="w-4 h-4" /> Đóng</> : <><Plus className="w-4 h-4" /> Tạo mới</>}
@@ -540,8 +560,8 @@ export default function AdminDashboardPage() {
                                         </span>
                                     )}
                                     <span className={`text-[10px] px-2 py-0.5 rounded-full ${emp.isVerified
-                                            ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                         }`}>
                                         {emp.isVerified ? '✅ Đã xác minh' : '⏳ Chưa xác minh'}
                                     </span>

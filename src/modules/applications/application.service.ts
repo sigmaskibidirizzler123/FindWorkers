@@ -63,7 +63,6 @@ export class ApplicationService {
                         candidate: {
                             include: {
                                 user: { select: { email: true, phone: true, avatarUrl: true } },
-                                skills: { include: { skill: true } },
                             },
                         },
                         screeningAnswers: { include: { question: true } },
@@ -105,7 +104,7 @@ export class ApplicationService {
             const job = await prisma.job.findUnique({
                 where: { id: jobId },
                 include: {
-                    employer: { select: { userId: true, companyName: true } },
+                    employer: { select: { userId: true, businessName: true } },
                     screeningQuestions: { orderBy: { sortOrder: 'asc' } },
                 },
             });
@@ -134,7 +133,7 @@ export class ApplicationService {
                     job: {
                         select: {
                             title: true,
-                            employer: { select: { companyName: true } },
+                            employer: { select: { businessName: true } },
                         },
                     },
                 },
@@ -193,7 +192,7 @@ export class ApplicationService {
 
             const job = await prisma.job.findUnique({
                 where: { id: jobId },
-                include: { employer: { select: { userId: true, companyName: true } } },
+                include: { employer: { select: { userId: true, businessName: true } } },
             });
 
             if (!job || job.employer.userId !== payload.userId) {
