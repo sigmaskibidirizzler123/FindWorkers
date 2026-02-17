@@ -75,8 +75,6 @@ export class JobService {
                             select: {
                                 businessName: true,
                                 logoUrl: true,
-                                isVerified: true,
-                                city: true,
                             },
                         },
                         category: {

@@ -72,9 +72,6 @@ export async function GET(
                                     avatarUrl: true,
                                 },
                             },
-                            skills: {
-                                include: { skill: true },
-                            },
                         },
                     },
                     screeningAnswers: {

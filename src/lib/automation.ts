@@ -197,7 +197,7 @@ export async function calculateAndStoreMatchingScore(
         const score = calculateMatchingScore(
             {
                 experienceMonths: 0,
-                currentLocation: candidate.location || '',
+                currentLocation: candidate.currentLocation || '',
                 shifts: (candidate as any).shifts ? JSON.parse((candidate as any).shifts) : [],
             },
             {

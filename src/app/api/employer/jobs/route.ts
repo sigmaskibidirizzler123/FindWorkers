@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
         allJobs.forEach(g => {
             summary.total += g._count._all;
-            if (g.status === 'ACTIVE' || g.status === 'FEATURED') summary.active += g._count._all;
+            if (g.status === 'ACTIVE' || (g.status as string) === 'FEATURED') summary.active += g._count._all;
             else if (g.status === 'CLOSED') summary.closed += g._count._all;
             else if (g.status === 'DRAFT') summary.draft += g._count._all;
         });

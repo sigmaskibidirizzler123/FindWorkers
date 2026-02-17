@@ -69,8 +69,6 @@ export async function POST(request: NextRequest) {
                 employerId: employer.id,
                 name,
                 address,
-                district,
-                city,
                 phone,
                 managerName,
             },
