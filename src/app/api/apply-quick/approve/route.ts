@@ -63,6 +63,24 @@ export async function GET(request: NextRequest) {
                 });
             }
 
+            // 🔔 Discord notification — approved
+            const discordUrl = process.env.DISCORD_WEBHOOK_URL
+                || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
+            fetch(discordUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'FindWorkers Bot',
+                    embeds: [{
+                        title: '✅ Đã Duyệt Ứng Viên!',
+                        description: `👤 ${application.fullName}\n📞 ${application.phone}\n📧 ${application.email}\n📌 Vị trí: ${application.job.title}\n🏢 ${application.job.employer.businessName}`,
+                        color: 5763719,
+                        timestamp: new Date().toISOString(),
+                        footer: { text: 'FindWorkers Alert System' },
+                    }],
+                }),
+            }).catch(() => { });
+
             return renderPage(
                 '✅ Đã duyệt hồ sơ!',
                 `<strong>${application.fullName}</strong> đã được duyệt cho vị trí <strong>${application.job.title}</strong> tại <strong>${application.job.employer.businessName}</strong>.<br/><br/>
@@ -77,6 +95,24 @@ export async function GET(request: NextRequest) {
                 where: { id: application.id },
                 data: { status: 'REJECTED' }
             });
+
+            // 🔔 Discord notification — rejected
+            const discordUrlReject = process.env.DISCORD_WEBHOOK_URL
+                || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
+            fetch(discordUrlReject, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: 'FindWorkers Bot',
+                    embeds: [{
+                        title: '❌ Đã Từ Chối Ứng Viên',
+                        description: `👤 ${application.fullName}\n📌 Vị trí: ${application.job.title}\n🏢 ${application.job.employer.businessName}`,
+                        color: 15548997,
+                        timestamp: new Date().toISOString(),
+                        footer: { text: 'FindWorkers Alert System' },
+                    }],
+                }),
+            }).catch(() => { });
 
             return renderPage(
                 '❌ Đã từ chối hồ sơ',
