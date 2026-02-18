@@ -1,40 +1,41 @@
 import { NextResponse } from 'next/server';
-
-const DISCORD_URL = process.env.DISCORD_WEBHOOK_URL
-    || 'https://discord.com/api/webhooks/1473167290622283882/1qljsLDIUUMmthj4sZu6-CbGvkszIQwfpNtjcJmBK2Gyf6ipZ6CpIJcNpDU23FCw7ES7';
+import { discordJobPosted, discordNewApplication, discordStatusChange } from '@/lib/discord';
 
 export async function GET() {
     return NextResponse.json({
-        discord_url_set: !!process.env.DISCORD_WEBHOOK_URL,
-        using_fallback: !process.env.DISCORD_WEBHOOK_URL,
-        node_env: process.env.NODE_ENV,
+        channels: {
+            'bang-tin-doanh-nghiep': '💼 Employer đăng tin',
+            'tin-tuyen-dung-moi': '📊 Duyệt/từ chối ứng viên',
+            'thong-bao-ung-tuyen': '📨 Ứng viên ứng tuyển',
+        },
+        hint: 'POST /api/test-webhook?channel=all để test cả 3 kênh',
     });
 }
 
-export async function POST() {
-    try {
-        const response = await fetch(DISCORD_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'FindWorkers Bot',
-                embeds: [{
-                    title: '✅ Test Notification Thành Công!',
-                    description: '🎉 Discord webhook đã hoạt động!\n\nKhi employer đăng tin, bạn sẽ nhận thông báo ở đây.',
-                    color: 5763719,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: 'FindWorkers Alert System' },
-                }],
-            }),
-        });
+export async function POST(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const channel = searchParams.get('channel') || 'all';
 
-        const text = await response.text();
-        return NextResponse.json({
-            success: response.ok,
-            status: response.status,
-            response: text || '(empty = success)',
-        });
+    const results: Record<string, string> = {};
+
+    try {
+        if (channel === 'all' || channel === '1') {
+            await discordJobPosted('🧪 TEST — Bảo vệ', 'Company Test', 'Phú Quốc', '8M - 12M');
+            results['#bang-tin-doanh-nghiep'] = '✅ Sent';
+        }
+
+        if (channel === 'all' || channel === '2') {
+            await discordStatusChange('Test Candidate', 'Bảo vệ', 'Company Test', 'APPLIED', 'HIRED');
+            results['#tin-tuyen-dung-moi'] = '✅ Sent';
+        }
+
+        if (channel === 'all' || channel === '3') {
+            await discordNewApplication('Test Candidate', '0901234567', 'test@test.com', 'Bảo vệ', 'Company Test');
+            results['#thong-bao-ung-tuyen'] = '✅ Sent';
+        }
+
+        return NextResponse.json({ success: true, results });
     } catch (error: any) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message, results }, { status: 500 });
     }
 }

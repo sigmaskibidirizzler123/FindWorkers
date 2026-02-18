@@ -128,7 +128,7 @@ export async function PATCH(
         );
 
         // 🔔 Discord notification → #tin-tuyen-dung-moi
-        discordStatusChange(application.candidate.fullName, job.title, (job as any).employer.businessName, previousStatus, status);
+        await discordStatusChange(application.candidate.fullName, job.title, (job as any).employer.businessName, previousStatus, status);
 
         return successResponse(application);
     } catch (error) {

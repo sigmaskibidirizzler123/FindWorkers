@@ -1,7 +1,4 @@
 import nodemailer from 'nodemailer';
-import path from 'path';
-import { readFile } from 'fs/promises';
-import { existsSync } from 'fs';
 
 // Gmail SMTP configuration
 const transporter = nodemailer.createTransport({
@@ -14,7 +11,7 @@ const transporter = nodemailer.createTransport({
 
 interface ApplicationEmailData {
     applicationId: string;
-    approveToken: string;  // For email approval buttons
+    approveToken: string;
     jobTitle: string;
     companyName: string;
     fullName: string;
@@ -22,57 +19,48 @@ interface ApplicationEmailData {
     email: string;
     cccd: string;
     cccdImageUrl: string | null;
+    cccdImageBuffer: Buffer | null;  // Raw image buffer for email embedding
+    cccdImageMime: string;           // e.g. 'image/jpeg'
     appliedAt: string;
-    baseUrl: string; // e.g. http://localhost:3000
+    baseUrl: string;
     employerEmail?: string;
 }
 
 export async function sendApplicationEmail(data: ApplicationEmailData) {
-    const toEmail = process.env.NOTIFY_EMAIL || 'Luongnguyennhatminh2009@gmail.com';
-
     // Build approval URLs
     const approveUrl = `${data.baseUrl}/api/apply-quick/approve?token=${data.approveToken}&action=approve`;
     const rejectUrl = `${data.baseUrl}/api/apply-quick/approve?token=${data.approveToken}&action=reject`;
 
-    // Prepare CCCD image as inline attachment
+    // Prepare CCCD image as inline CID attachment
     const attachments: nodemailer.SendMailOptions['attachments'] = [];
     let cccdSection = '';
 
-    if (data.cccdImageUrl) {
-        // CASE 1: Remote URL (Cloudinary, Placeholder, etc.)
-        if (data.cccdImageUrl.startsWith('http')) {
-            cccdSection = `
-            <tr>
-                <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
-                    <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
-                    <img src="${data.cccdImageUrl}" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
-                </td>
-            </tr>`;
-        }
-        // CASE 2: Local File (Development only)
-        else {
-            const localPath = path.join(process.cwd(), 'public', data.cccdImageUrl);
-            if (existsSync(localPath)) {
-                const imageBuffer = await readFile(localPath);
-                const ext = path.extname(localPath).slice(1) || 'jpg';
-                const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+    if (data.cccdImageBuffer) {
+        // Embed raw image buffer as CID inline attachment — works on ALL email clients
+        const ext = data.cccdImageMime.split('/')[1] || 'jpg';
+        attachments.push({
+            filename: `cccd_${data.cccd}.${ext}`,
+            content: data.cccdImageBuffer,
+            cid: 'cccd_image',
+            contentType: data.cccdImageMime,
+        });
 
-                attachments.push({
-                    filename: `cccd_${data.cccd}.${ext}`,
-                    content: imageBuffer,
-                    cid: 'cccd_image',
-                    contentType: mimeType,
-                });
-
-                cccdSection = `
-                <tr>
-                    <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
-                        <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
-                        <img src="cid:cccd_image" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
-                    </td>
-                </tr>`;
-            }
-        }
+        cccdSection = `
+        <tr>
+            <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
+                <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
+                <img src="cid:cccd_image" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
+            </td>
+        </tr>`;
+    } else if (data.cccdImageUrl && data.cccdImageUrl.startsWith('http')) {
+        // Fallback: remote URL (if using cloud storage in future)
+        cccdSection = `
+        <tr>
+            <td colspan="2" style="padding: 16px; border: 1px solid #e2e8f0; text-align: center; background: #fafafa;">
+                <p style="font-weight: 600; color: #475569; margin: 0 0 12px; font-size: 14px;">📷 Ảnh CCCD mặt trước</p>
+                <img src="${data.cccdImageUrl}" alt="CCCD mặt trước" style="max-width: 100%; max-height: 350px; border-radius: 8px; border: 2px solid #e2e8f0;" />
+            </td>
+        </tr>`;
     }
 
     const html = `
@@ -120,9 +108,7 @@ export async function sendApplicationEmail(data: ApplicationEmailData) {
                 ${cccdSection}
             </table>
 
-            <!-- ═══════════════════════════════════ -->
             <!-- APPROVE / REJECT BUTTONS -->
-            <!-- ═══════════════════════════════════ -->
             <div style="margin-top: 24px; padding: 20px; background: #fffbeb; border-radius: 12px; border: 1px solid #fbbf24; text-align: center;">
                 <p style="color: #92400e; font-weight: 700; font-size: 15px; margin: 0 0 6px;">⚡ Duyệt hồ sơ ngay</p>
                 <p style="color: #a16207; font-size: 12px; margin: 0 0 16px;">Bấm nút bên dưới để duyệt hoặc từ chối ứng viên này</p>
@@ -164,7 +150,7 @@ export async function sendApplicationEmail(data: ApplicationEmailData) {
     await transporter.sendMail({
         from: `"FindWorkers" <${process.env.SMTP_USER}>`,
         to: process.env.NOTIFY_EMAIL || 'Luongnguyennhatminh2009@gmail.com',
-        cc: data.employerEmail, // Send copy to Employer
+        cc: data.employerEmail,
         subject: `🔔 Ứng viên mới: ${data.fullName} ứng tuyển ${data.jobTitle}`,
         html,
         attachments,

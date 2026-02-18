@@ -54,16 +54,19 @@ export async function POST(request: NextRequest) {
             return errorResponse('Tin tuyển dụng không tồn tại hoặc đã đóng', 404);
         }
 
-        // Upload CCCD image if provided
-        // Upload CCCD image if provided
+        // Upload CCCD image — convert to base64 for email embedding
+        // (Vercel serverless has no persistent filesystem)
         let cccdImageUrl: string | null = null;
+        let cccdImageBuffer: Buffer | null = null;
+        let cccdImageMime: string = 'image/jpeg';
 
-        // VERCEL FIX: Cannot write to disk in serverless environment.
-        // TODO: Implement Cloudinary or Vercel Blob for production image storage.
         if (cccdImage && cccdImage.size > 0) {
             console.log('[QuickApply] Received CCCD image:', cccdImage.name, cccdImage.size, 'bytes');
-            // Mock URL for now to prevent crash
-            cccdImageUrl = `https://placehold.co/600x400?text=CCCD+Uploaded`;
+            const arrayBuffer = await cccdImage.arrayBuffer();
+            cccdImageBuffer = Buffer.from(arrayBuffer);
+            cccdImageMime = cccdImage.type || 'image/jpeg';
+            // Create data URI for fallback display
+            cccdImageUrl = `data:${cccdImageMime};base64,${cccdImageBuffer.toString('base64')}`;
         }
 
         // Save to database with unique approve token
@@ -113,6 +116,8 @@ export async function POST(request: NextRequest) {
                 email: email.trim(),
                 cccd: cccd.trim(),
                 cccdImageUrl: cccdImageUrl,
+                cccdImageBuffer: cccdImageBuffer,
+                cccdImageMime: cccdImageMime,
                 appliedAt: new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
                 baseUrl,
                 employerEmail,
@@ -124,7 +129,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🔔 Discord notification → #thong-bao-ung-tuyen
-        discordNewApplication(fullName.trim(), phone.trim(), email.trim(), job.title, job.employer.businessName || 'Công ty ẩn danh', cccd.trim());
+        await discordNewApplication(fullName.trim(), phone.trim(), email.trim(), job.title, job.employer.businessName || 'Công ty ẩn danh', cccd.trim());
 
         return successResponse({
             id: application.id,

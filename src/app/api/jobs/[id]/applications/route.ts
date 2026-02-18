@@ -203,7 +203,7 @@ export async function POST(
         );
 
         // 🔔 Discord notification → #thong-bao-ung-tuyen
-        discordNewApplication(candidate.fullName, candidate.phone || 'N/A', '', job.title, job.employer.businessName);
+        await discordNewApplication(candidate.fullName, candidate.phone || 'N/A', '', job.title, job.employer.businessName);
 
         return successResponse({ ...application, matchingScore: score }, 201);
     } catch (error) {

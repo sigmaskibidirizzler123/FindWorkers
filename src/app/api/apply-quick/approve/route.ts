@@ -65,7 +65,12 @@ export async function GET(request: NextRequest) {
             }
 
             // 🔔 Discord notification → #tin-tuyen-dung-moi
-            discordQuickApprove(application.fullName, application.phone, application.email, application.job.title, application.job.employer.businessName);
+            try {
+                await discordQuickApprove(application.fullName, application.phone, application.email, application.job.title, application.job.employer.businessName);
+                console.log('[Approve] ✅ Discord notification sent');
+            } catch (discordErr) {
+                console.error('[Approve] Discord notification failed:', discordErr);
+            }
 
             return renderPage(
                 '✅ Đã duyệt hồ sơ!',
@@ -83,7 +88,12 @@ export async function GET(request: NextRequest) {
             });
 
             // 🔔 Discord notification → #tin-tuyen-dung-moi
-            discordQuickReject(application.fullName, application.job.title, application.job.employer.businessName);
+            try {
+                await discordQuickReject(application.fullName, application.job.title, application.job.employer.businessName);
+                console.log('[Reject] ✅ Discord notification sent');
+            } catch (discordErr) {
+                console.error('[Reject] Discord notification failed:', discordErr);
+            }
 
             return renderPage(
                 '❌ Đã từ chối hồ sơ',

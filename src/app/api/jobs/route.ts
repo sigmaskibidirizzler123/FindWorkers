@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
             ? `${((job as any).salaryMin / 1_000_000).toFixed(1)}M - ${((job as any).salaryMax / 1_000_000).toFixed(1)}M`
             : 'Thỏa thuận';
 
-        discordJobPosted(job.title, job.employer.businessName, (job as any).location || 'Phú Quốc', salary);
+        await discordJobPosted(job.title, job.employer.businessName, (job as any).location || 'Phú Quốc', salary);
 
         return successResponse(job, 201);
     } catch (error: any) {
