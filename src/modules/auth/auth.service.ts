@@ -32,6 +32,7 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 import { authLogger } from '@/lib/logger';
 import { eventBus } from '@/lib/events';
 import { getClientIP } from '@/lib/rate-limiter';
+import { checkBlacklists } from '@/lib/blacklist';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -228,7 +229,7 @@ export class AuthService {
     static async registerCandidate(request: NextRequest) {
         try {
             const body = await request.json();
-            const { phone, password, email } = body;
+            const { phone, password, email, firebaseUid } = body;
 
             // Validate phone
             if (!phone) {
@@ -242,6 +243,21 @@ export class AuthService {
 
             if (!password || password.length < 6) {
                 return errorResponse('Mật khẩu phải có ít nhất 6 ký tự', 400);
+            }
+
+            // === BLACKLIST CHECK ===
+            const ip = getClientIP(request);
+            const blacklistResult = await checkBlacklists([
+                { type: 'ip', value: ip },
+                { type: 'phone', value: normalizedPhone },
+                ...(email ? [{ type: 'email' as const, value: email.toLowerCase().trim() }] : []),
+            ]);
+            if (blacklistResult.blocked) {
+                authLogger.warn('Registration blocked by blacklist', {
+                    type: blacklistResult.blockedType,
+                    ip,
+                });
+                return errorResponse('Đăng ký bị từ chối. Liên hệ admin nếu đây là nhầm lẫn.', 403);
             }
 
             // Check existing phone
@@ -270,6 +286,8 @@ export class AuthService {
                     email: email ? email.toLowerCase().trim() : null,
                     password: hashedPassword,
                     role: 'CANDIDATE',
+                    phoneVerified: !!firebaseUid,  // Verified if Firebase OTP was used
+                    firebaseUid: firebaseUid || null,
                 },
             });
 
@@ -324,7 +342,7 @@ export class AuthService {
     static async registerEmployer(request: NextRequest) {
         try {
             const body = await request.json();
-            const { email, password, phone } = body;
+            const { email, password, phone, firebaseUid } = body;
 
             // Email required for employers
             if (!email) {
@@ -337,6 +355,21 @@ export class AuthService {
             }
 
             const normalizedEmail = email.toLowerCase().trim();
+
+            // === BLACKLIST CHECK ===
+            const ip = getClientIP(request);
+            const blacklistResult = await checkBlacklists([
+                { type: 'ip', value: ip },
+                { type: 'email', value: normalizedEmail },
+                ...(phone ? [{ type: 'phone' as const, value: normalizePhone(phone) }] : []),
+            ]);
+            if (blacklistResult.blocked) {
+                authLogger.warn('Employer registration blocked by blacklist', {
+                    type: blacklistResult.blockedType,
+                    ip,
+                });
+                return errorResponse('Đăng ký bị từ chối. Liên hệ admin nếu đây là nhầm lẫn.', 403);
+            }
 
             // Check existing email
             const existingEmail = await prisma.user.findUnique({
@@ -368,6 +401,8 @@ export class AuthService {
                     phone: phone ? normalizePhone(phone) : null,
                     password: hashedPassword,
                     role: 'EMPLOYER',
+                    phoneVerified: !!firebaseUid,
+                    firebaseUid: firebaseUid || null,
                 },
             });
 

@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import PhoneOTP from '@/components/PhoneOTP';
 import {
     Phone, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2,
     User, Building2, Briefcase, AlertCircle, CheckCircle2,
@@ -39,6 +40,11 @@ function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Phone verification state
+    const [phoneVerified, setPhoneVerified] = useState(false);
+    const [verifiedPhone, setVerifiedPhone] = useState('');
+    const [firebaseUid, setFirebaseUid] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,9 +86,10 @@ function RegisterForm() {
             const body = isCandidate
                 ? {
                     role: 'CANDIDATE',
-                    phone: candidateData.phone,
+                    phone: verifiedPhone || candidateData.phone,
                     password: candidateData.password,
                     email: candidateData.email || undefined,
+                    firebaseUid: firebaseUid || undefined,
                 }
                 : {
                     role: 'EMPLOYER',
@@ -175,87 +182,109 @@ function RegisterForm() {
                         {/* ═══ CANDIDATE FORM ═══ */}
                         {activeTab === 'CANDIDATE' && (
                             <>
-                                {/* Phone (required) */}
-                                <div>
-                                    <label htmlFor="reg-phone" className="input-label">
-                                        Số điện thoại <span className="text-red-400">*</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                        <input
-                                            id="reg-phone"
-                                            type="tel"
-                                            value={candidateData.phone}
-                                            onChange={(e) => setCandidateData({ ...candidateData, phone: e.target.value })}
-                                            placeholder="0912 345 678"
-                                            className="input-field pl-11"
-                                            required
-                                            autoFocus
+                                {/* Step 1: Phone OTP Verification */}
+                                {!phoneVerified ? (
+                                    <div>
+                                        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 mb-4">
+                                            <div className="flex items-center gap-2 text-sm text-blue-300 mb-1">
+                                                <ShieldCheck className="w-4 h-4" />
+                                                <span className="font-semibold">Bước 1: Xác thực số điện thoại</span>
+                                            </div>
+                                            <p className="text-xs text-slate-400">Xác thực OTP để bảo vệ tài khoản của bạn</p>
+                                        </div>
+                                        <PhoneOTP
+                                            mode="register"
+                                            onVerified={(data) => {
+                                                setPhoneVerified(true);
+                                                setVerifiedPhone(data.phone);
+                                                setFirebaseUid(data.firebaseUid);
+                                                setCandidateData(prev => ({ ...prev, phone: data.phone }));
+                                            }}
                                         />
                                     </div>
-                                </div>
+                                ) : (
+                                    <>
+                                        {/* Verified phone badge */}
+                                        <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-3">
+                                            <CheckCircle2 className="w-5 h-5 text-green-400" />
+                                            <div>
+                                                <p className="text-sm text-green-300 font-semibold">Đã xác thực: {verifiedPhone}</p>
+                                                <p className="text-xs text-slate-400">Số điện thoại đã được xác minh qua OTP</p>
+                                            </div>
+                                        </div>
 
-                                {/* Password (6 chars min) */}
-                                <div>
-                                    <label htmlFor="reg-c-password" className="input-label">
-                                        Mật khẩu <span className="text-xs text-slate-500">(tối thiểu 6 ký tự)</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                        <input
-                                            id="reg-c-password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={candidateData.password}
-                                            onChange={(e) => setCandidateData({ ...candidateData, password: e.target.value })}
-                                            placeholder="••••••"
-                                            className="input-field pl-11 pr-11"
-                                            required
-                                            minLength={6}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </button>
-                                    </div>
-                                </div>
+                                        {/* Step 2: Password */}
+                                        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                            <div className="flex items-center gap-2 text-sm text-blue-300 mb-1">
+                                                <Lock className="w-4 h-4" />
+                                                <span className="font-semibold">Bước 2: Tạo mật khẩu</span>
+                                            </div>
+                                        </div>
 
-                                {/* Confirm Password */}
-                                <div>
-                                    <label htmlFor="reg-c-confirm" className="input-label">Xác nhận mật khẩu</label>
-                                    <div className="relative">
-                                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                        <input
-                                            id="reg-c-confirm"
-                                            type="password"
-                                            value={candidateData.confirmPassword}
-                                            onChange={(e) => setCandidateData({ ...candidateData, confirmPassword: e.target.value })}
-                                            placeholder="Nhập lại mật khẩu"
-                                            className="input-field pl-11"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                                        {/* Password */}
+                                        <div>
+                                            <label htmlFor="reg-c-password" className="input-label">
+                                                Mật khẩu <span className="text-xs text-slate-500">(tối thiểu 6 ký tự)</span>
+                                            </label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                                <input
+                                                    id="reg-c-password"
+                                                    type={showPassword ? 'text' : 'password'}
+                                                    value={candidateData.password}
+                                                    onChange={(e) => setCandidateData({ ...candidateData, password: e.target.value })}
+                                                    placeholder="••••••"
+                                                    className="input-field pl-11 pr-11"
+                                                    required
+                                                    minLength={6}
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                                                >
+                                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                                </button>
+                                            </div>
+                                        </div>
 
-                                {/* Email (optional) */}
-                                <div>
-                                    <label htmlFor="reg-c-email" className="input-label">
-                                        Email <span className="text-xs text-slate-500">(không bắt buộc)</span>
-                                    </label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                                        <input
-                                            id="reg-c-email"
-                                            type="email"
-                                            value={candidateData.email}
-                                            onChange={(e) => setCandidateData({ ...candidateData, email: e.target.value })}
-                                            placeholder="your@email.com (tuỳ chọn)"
-                                            className="input-field pl-11"
-                                        />
-                                    </div>
-                                </div>
+                                        {/* Confirm Password */}
+                                        <div>
+                                            <label htmlFor="reg-c-confirm" className="input-label">Xác nhận mật khẩu</label>
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                                <input
+                                                    id="reg-c-confirm"
+                                                    type="password"
+                                                    value={candidateData.confirmPassword}
+                                                    onChange={(e) => setCandidateData({ ...candidateData, confirmPassword: e.target.value })}
+                                                    placeholder="Nhập lại mật khẩu"
+                                                    className="input-field pl-11"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Email (optional) */}
+                                        <div>
+                                            <label htmlFor="reg-c-email" className="input-label">
+                                                Email <span className="text-xs text-slate-500">(không bắt buộc)</span>
+                                            </label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                                                <input
+                                                    id="reg-c-email"
+                                                    type="email"
+                                                    value={candidateData.email}
+                                                    onChange={(e) => setCandidateData({ ...candidateData, email: e.target.value })}
+                                                    placeholder="your@email.com (tuỳ chọn)"
+                                                    className="input-field pl-11"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 {/* Benefits */}
                                 <div className="pt-2 space-y-2">
@@ -268,8 +297,8 @@ function RegisterForm() {
                                         <span>Hàng trăm việc làm tại Phú Quốc</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-slate-400">
-                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                        <span>Ứng tuyển nhanh, không cần CV</span>
+                                        <ShieldCheck className="w-4 h-4 text-purple-500" />
+                                        <span>Xác thực OTP — bảo vệ tài khoản</span>
                                     </div>
                                 </div>
                             </>
@@ -340,7 +369,7 @@ function RegisterForm() {
                         )}
 
                         {/* Submit Button — only for CANDIDATE */}
-                        {activeTab === 'CANDIDATE' && (
+                        {activeTab === 'CANDIDATE' && phoneVerified && (
                             <button
                                 type="submit"
                                 disabled={loading}

@@ -74,6 +74,11 @@ model User {
   role                UserRole  @default(CANDIDATE)
   isActive            Boolean   @default(true)
   isVerified          Boolean   @default(false)
+  phoneVerified       Boolean   @default(false)
+  emailVerified       Boolean   @default(false)
+  emailVerifyToken    String?   @unique
+  emailVerifyExpires  DateTime?
+  firebaseUid         String?   @unique    // Firebase Auth UID
   avatarUrl           String?
   lastLoginAt         DateTime?
   lastLoginIP         String?
@@ -86,9 +91,11 @@ model User {
   employerProfile  EmployerProfile?
   savedJobs        SavedJob[]
   notifications    Notification[]
+  phoneChangeLogs  PhoneChangeLog[]
 
   @@index([phone])
   @@index([email])
+  @@index([firebaseUid])
   @@map("users")
 }
 
@@ -455,4 +462,46 @@ model ActivityLog {
   @@index([createdAt])
   @@index([action])
   @@map("activity_logs")
+}
+
+// ============================================================
+// PHONE CHANGE AUDIT LOG
+// ============================================================
+
+model PhoneChangeLog {
+  id          String   @id @default(cuid())
+  userId      String
+  oldPhone    String
+  newPhone    String
+  changedAt   DateTime @default(now())
+  ipAddress   String?
+  deviceInfo  String?
+  reason      String?  // "user_request", "admin_change"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([oldPhone])
+  @@index([newPhone])
+  @@map("phone_change_logs")
+}
+
+// ============================================================
+// BLACKLIST — Block abuse
+// ============================================================
+
+model Blacklist {
+  id          String   @id @default(cuid())
+  type        String   // "ip", "phone", "email", "device"
+  value       String   // The blocked value
+  reason      String?
+  blockedBy   String?  // Admin userId who blocked
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([type, value])
+  @@index([type, isActive])
+  @@index([expiresAt])
+  @@map("blacklists")
 }
