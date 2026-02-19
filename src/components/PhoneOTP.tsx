@@ -19,6 +19,7 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
     const [maskedPhone, setMaskedPhone] = useState('');
     const [sendsRemaining, setSendsRemaining] = useState(3);
     const [attemptsInfo, setAttemptsInfo] = useState('');
+    const [devOtp, setDevOtp] = useState('');
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     // Countdown timer
@@ -120,6 +121,10 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
             setMaskedPhone(data.phone_masked || maskPhoneDisplay(phone));
             setOtp(['', '', '', '', '', '']);
             setError('');
+            // Show OTP on screen if SMS unavailable
+            if (data.devOtp) {
+                setDevOtp(data.devOtp);
+            }
 
             setTimeout(() => inputRefs.current[0]?.focus(), 150);
         } catch {
@@ -277,6 +282,15 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                     <p className="otp-verify-subtitle">
                         Đã gửi SMS đến <strong>{maskedPhone}</strong>. Mã có hiệu lực 5 phút.
                     </p>
+
+                    {/* Show OTP on screen when SMS unavailable */}
+                    {devOtp && (
+                        <div className="otp-dev-code">
+                            <p className="otp-dev-label">📋 Mã OTP của bạn:</p>
+                            <p className="otp-dev-value">{devOtp}</p>
+                            <p className="otp-dev-note">Nhập mã trên vào ô bên dưới để xác thực</p>
+                        </div>
+                    )}
 
                     {/* 6-digit OTP boxes */}
                     <div className="otp-digits" onPaste={handlePaste}>
@@ -652,6 +666,34 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                     color: #fca5a5;
                     font-size: 13px;
                     animation: slideDown 0.2s ease-out;
+                }
+
+                /* Dev OTP Display */
+                .otp-dev-code {
+                    text-align: center;
+                    padding: 14px;
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(99, 102, 241, 0.12));
+                    border: 2px dashed rgba(99, 102, 241, 0.4);
+                    border-radius: 10px;
+                    animation: slideDown 0.3s ease-out;
+                }
+                .otp-dev-label {
+                    font-size: 12px;
+                    color: #94a3b8;
+                    margin: 0 0 4px;
+                }
+                .otp-dev-value {
+                    font-size: 32px;
+                    font-weight: 800;
+                    letter-spacing: 8px;
+                    color: #a5b4fc;
+                    margin: 0;
+                    font-family: monospace;
+                }
+                .otp-dev-note {
+                    font-size: 11px;
+                    color: #64748b;
+                    margin: 6px 0 0;
                 }
             `}</style>
         </div>

@@ -99,29 +99,33 @@ export async function POST(req: NextRequest) {
 
         // ── Send SMS ──
         const smsResult = await sendOTP(normalized, code);
+        const maskedPhone = maskPhone(normalized);
+        let smsFailed = false;
 
         if (!smsResult.success) {
             console.error(`[send-otp] SMS failed:`, smsResult.error);
-            return NextResponse.json(
-                { success: false, error: 'Không thể gửi SMS. Vui lòng thử lại.' },
-                { status: 500 }
-            );
+            console.log(`[send-otp] Fallback: returning OTP directly for ${maskedPhone}`);
+            smsFailed = true;
+            // Don't block registration - fallback to showing OTP on screen
+        } else {
+            console.log(`[send-otp] OTP sent to ${maskedPhone} via ${smsResult.provider}`);
         }
 
-        const isDev = process.env.NODE_ENV === 'development';
-        const maskedPhone = maskPhone(normalized);
-
-        console.log(`[send-otp] OTP sent to ${maskedPhone} via ${smsResult.provider}`);
+        const isConsole = smsResult.provider === 'console' || smsFailed;
 
         return NextResponse.json({
             success: true,
-            message: `Đã gửi mã OTP đến ${maskedPhone}`,
+            message: smsFailed
+                ? `SMS không khả dụng. Mã OTP hiển thị bên dưới.`
+                : `Đã gửi mã OTP đến ${maskedPhone}`,
             phone_masked: maskedPhone,
             phone_international: toInternational(normalized),
-            expires_in: OTP_CONFIG.EXPIRES_IN_MS / 1000, // seconds
+            expires_in: OTP_CONFIG.EXPIRES_IN_MS / 1000,
             resend_cooldown: OTP_CONFIG.RESEND_COOLDOWN_MS / 1000,
-            provider: smsResult.provider,
-            ...(isDev && smsResult.provider === 'console' ? { devOtp: code } : {}),
+            provider: smsResult.provider || 'fallback',
+            sms_sent: !smsFailed,
+            // Show OTP on screen when SMS unavailable or in console mode
+            ...(isConsole ? { devOtp: code } : {}),
         });
 
     } catch (error) {
