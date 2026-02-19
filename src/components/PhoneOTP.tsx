@@ -314,7 +314,7 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                                     ) : (
                                         <>
                                             <span className="otp-carrier-icon">⚠️</span>
-                                            <span className="otp-carrier-warn">Đầu số <strong>{phoneNormalized.slice(0, 3)}</strong> không thuộc nhà mạng nào tại Việt Nam</span>
+                                            <span className="otp-carrier-warn">Đầu số <strong>{phoneNormalized.slice(0, 3)}</strong> không nhận diện được nhà mạng. Vẫn có thể gửi OTP.</span>
                                         </>
                                     )}
                                 </div>
@@ -322,11 +322,11 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
 
                             <button
                                 onClick={handleSendOTP}
-                                disabled={disabled || loading || !phone || phoneInvalidPrefix}
+                                disabled={disabled || loading || !phone}
                                 className="otp-send-btn"
                                 id="send-otp-btn"
                             >
-                                {loading ? '⏳ Đang gửi...' : phoneInvalidPrefix ? '❌ Đầu số không hợp lệ' : '📨 Gửi mã OTP'}
+                                {loading ? '⏳ Đang gửi...' : '📨 Gửi mã OTP'}
                             </button>
                             <p className="otp-hint">Bạn sẽ nhận SMS chứa mã xác thực 6 số</p>
                         </>
@@ -774,12 +774,12 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                     border: 1px solid rgba(34, 197, 94, 0.2);
                 }
                 .otp-carrier-invalid {
-                    background: rgba(239, 68, 68, 0.08);
-                    border: 1px solid rgba(239, 68, 68, 0.2);
+                    background: rgba(245, 158, 11, 0.08);
+                    border: 1px solid rgba(245, 158, 11, 0.2);
                 }
                 .otp-carrier-icon { font-size: 14px; }
                 .otp-carrier-name { color: #cbd5e1; }
-                .otp-carrier-warn { color: #fca5a5; font-size: 11px; }
+                .otp-carrier-warn { color: #fbbf24; font-size: 11px; }
                 .otp-carrier-check { margin-left: auto; }
 
                 /* Phone input validation states */
@@ -788,8 +788,8 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                     box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15) !important;
                 }
                 .otp-phone-invalid {
-                    border-color: rgba(239, 68, 68, 0.4) !important;
-                    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15) !important;
+                    border-color: rgba(245, 158, 11, 0.4) !important;
+                    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.15) !important;
                 }
             `}</style>
         </div>
