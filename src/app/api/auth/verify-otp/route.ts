@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { otpStore, OTP_CONFIG } from '@/lib/otp-store';
-import { generateToken } from '@/lib/auth';
-import { hashPassword } from '@/lib/auth';
 import crypto from 'crypto';
 
 function normalizePhone(phone: string): string {
@@ -15,7 +12,7 @@ function normalizePhone(phone: string): string {
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { phone, otp_code, otp, mode = 'register', role = 'CANDIDATE', password } = body;
+        const { phone, otp_code, otp, mode = 'register' } = body;
         const code = otp_code || otp; // Support both field names
 
         // ── Validate ──
@@ -85,91 +82,25 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // ── OTP CORRECT ──
+        // ══════════════════════════════════
+        // ── OTP CORRECT → Chỉ xác thực phone, KHÔNG tạo user
+        // ── User sẽ được tạo ở bước 3 (đặt mật khẩu)
+        // ══════════════════════════════════
         const verificationId = crypto.randomUUID();
 
-        // Mark as verified (keep in store temporarily for registration)
+        // Mark as verified (giữ trong store để bước register kiểm tra)
         stored.verified = true;
         stored.verificationId = verificationId;
+        // Extend expiry thêm 10 phút cho bước tạo mật khẩu
+        stored.expiresAt = now + 10 * 60 * 1000;
 
-        console.log(`[verify-otp] Phone ${normalized} verified successfully`);
-
-        // ── Mode: Register → Create user + JWT + auto login ──
-        if (mode === 'register') {
-            // Check existing user
-            const existingUser = await prisma.user.findFirst({
-                where: { phone: normalized }
-            });
-
-            if (existingUser) {
-                otpStore.delete(normalized);
-                return NextResponse.json(
-                    { success: false, error: 'Số điện thoại này đã được đăng ký' },
-                    { status: 400 }
-                );
-            }
-
-            // Create user with verified phone
-            const userRole = (role === 'EMPLOYER') ? 'EMPLOYER' : 'CANDIDATE';
-            const hashedPw = password ? await hashPassword(password) : await hashPassword(crypto.randomUUID());
-
-            const user = await prisma.user.create({
-                data: {
-                    phone: normalized,
-                    password: hashedPw,
-                    role: userRole,
-                    phoneVerified: true,
-                    firebaseUid: verificationId, // Reuse field for verification tracking
-                },
-            });
-
-            // Generate JWT
-            const token = generateToken({
-                userId: user.id,
-                email: user.email || '',
-                role: user.role,
-            });
-
-            // Clean up OTP
-            otpStore.delete(normalized);
-
-            console.log(`[verify-otp] User created: ${user.id} (${userRole})`);
-
-            // Return response with Set-Cookie
-            const response = NextResponse.json({
-                success: true,
-                message: 'Xác thực thành công',
-                verificationId,
-                token,
-                user: {
-                    id: user.id,
-                    phone: user.phone,
-                    role: user.role,
-                    hasProfile: false,
-                },
-                redirectPath: userRole === 'EMPLOYER' ? '/employer/dashboard' : '/jobs',
-            });
-
-            // Set HttpOnly cookie
-            response.cookies.set('token', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 7, // 7 days
-                path: '/',
-            });
-
-            return response;
-        }
-
-        // ── Mode: Verify (just confirm phone, don't create user) ──
-        otpStore.delete(normalized);
+        console.log(`[verify-otp] Phone ${normalized} verified (mode: ${mode}), verificationId: ${verificationId}`);
 
         return NextResponse.json({
             success: true,
-            message: 'Xác thực thành công',
+            message: 'Xác thực số điện thoại thành công!',
             verificationId,
-            token: verificationId,
+            phone: normalized,
         });
 
     } catch (error) {

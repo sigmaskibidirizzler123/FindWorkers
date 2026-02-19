@@ -168,27 +168,13 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                 return;
             }
 
-            // ── SUCCESS ──
+            // ── SUCCESS → Chỉ xác thực phone, chuyển sang bước 3 (mật khẩu) ──
             setStep('verified');
-
-            // If register mode and user was created, redirect
-            if (mode === 'register' && data.user && data.redirectPath) {
-                onVerified({
-                    phone: normalizedPhone,
-                    firebaseIdToken: data.token || '',
-                    firebaseUid: data.verificationId || data.user?.id || '',
-                });
-                // Auto redirect after showing success
-                setTimeout(() => {
-                    window.location.href = data.redirectPath;
-                }, 1500);
-            } else {
-                onVerified({
-                    phone: normalizedPhone,
-                    firebaseIdToken: data.token || '',
-                    firebaseUid: data.verificationId || '',
-                });
-            }
+            onVerified({
+                phone: normalizedPhone,
+                firebaseIdToken: '',
+                firebaseUid: data.verificationId || '',
+            });
         } catch {
             setError('Lỗi kết nối server.');
         } finally {

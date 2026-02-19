@@ -213,12 +213,13 @@ function RegisterForm() {
                                             </div>
                                         </div>
 
-                                        {/* Step 2: Password */}
+                                        {/* Step 3: Password */}
                                         <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
                                             <div className="flex items-center gap-2 text-sm text-blue-300 mb-1">
                                                 <Lock className="w-4 h-4" />
-                                                <span className="font-semibold">Bước 2: Tạo mật khẩu</span>
+                                                <span className="font-semibold">Bước 3: Tạo mật khẩu</span>
                                             </div>
+                                            <p className="text-xs text-slate-400">Mật khẩu dùng để đăng nhập lần sau</p>
                                         </div>
 
                                         {/* Password */}
