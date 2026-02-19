@@ -29,6 +29,57 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         return () => clearTimeout(timer);
     }, [countdown]);
 
+    // ── Vietnamese carrier prefixes database ──
+    const CARRIERS: Record<string, { name: string; color: string; icon: string }> = {
+        // Viettel
+        '032': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '033': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '034': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '035': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '036': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '037': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '038': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '039': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '086': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '096': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '097': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        '098': { name: 'Viettel', color: '#e3342f', icon: '🔴' },
+        // Mobifone
+        '070': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '076': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '077': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '078': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '079': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '089': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '090': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        '093': { name: 'Mobifone', color: '#3490dc', icon: '🔵' },
+        // Vinaphone
+        '081': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '082': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '083': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '084': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '085': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '088': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '091': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        '094': { name: 'Vinaphone', color: '#38c172', icon: '🟢' },
+        // Vietnamobile
+        '052': { name: 'Vietnamobile', color: '#f6993f', icon: '🟠' },
+        '056': { name: 'Vietnamobile', color: '#f6993f', icon: '🟠' },
+        '058': { name: 'Vietnamobile', color: '#f6993f', icon: '🟠' },
+        '092': { name: 'Vietnamobile', color: '#f6993f', icon: '🟠' },
+        // Gmobile
+        '059': { name: 'Gmobile', color: '#9561e2', icon: '🟣' },
+        '099': { name: 'Gmobile', color: '#9561e2', icon: '🟣' },
+    };
+
+    // Detect carrier from phone number
+    const detectCarrier = (p: string): { name: string; color: string; icon: string } | null => {
+        const n = normalizePhone(p);
+        if (n.length < 4) return null;
+        const prefix3 = n.slice(0, 3);
+        return CARRIERS[prefix3] || null;
+    };
+
     // Validate VN phone
     const isValidPhone = (p: string): boolean => {
         const cleaned = p.replace(/[\s\-().]/g, '');
@@ -50,6 +101,13 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         if (n.length < 7) return n;
         return n.slice(0, 4) + '***' + n.slice(-3);
     };
+
+    // Get carrier info for current phone
+    const carrier = detectCarrier(phone);
+    const phoneNormalized = normalizePhone(phone);
+    const phoneComplete = phoneNormalized.length === 10;
+    const phoneHasValidPrefix = phoneNormalized.length >= 3 && carrier !== null;
+    const phoneInvalidPrefix = phoneNormalized.length >= 3 && carrier === null && /^0\d{2}/.test(phoneNormalized);
 
     // Handle OTP digit input
     const handleOtpChange = (index: number, value: string) => {
@@ -237,19 +295,38 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="0907697043"
-                                    className="otp-phone-input"
+                                    className={`otp-phone-input ${phoneInvalidPrefix ? 'otp-phone-invalid' : ''} ${phoneHasValidPrefix && phoneComplete ? 'otp-phone-valid' : ''}`}
                                     disabled={disabled || loading}
                                     maxLength={12}
                                     id="phone-input"
                                 />
                             </div>
+
+                            {/* ── Carrier detection info ── */}
+                            {phoneNormalized.length >= 3 && (
+                                <div className={`otp-carrier-info ${carrier ? 'otp-carrier-valid' : 'otp-carrier-invalid'}`}>
+                                    {carrier ? (
+                                        <>
+                                            <span className="otp-carrier-icon">{carrier.icon}</span>
+                                            <span className="otp-carrier-name">Nhà mạng: <strong style={{ color: carrier.color }}>{carrier.name}</strong></span>
+                                            {phoneComplete && <span className="otp-carrier-check">✅</span>}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="otp-carrier-icon">⚠️</span>
+                                            <span className="otp-carrier-warn">Đầu số <strong>{phoneNormalized.slice(0, 3)}</strong> không thuộc nhà mạng nào tại Việt Nam</span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
                             <button
                                 onClick={handleSendOTP}
-                                disabled={disabled || loading || !phone}
+                                disabled={disabled || loading || !phone || phoneInvalidPrefix}
                                 className="otp-send-btn"
                                 id="send-otp-btn"
                             >
-                                {loading ? '⏳ Đang gửi...' : '📨 Gửi mã OTP'}
+                                {loading ? '⏳ Đang gửi...' : phoneInvalidPrefix ? '❌ Đầu số không hợp lệ' : '📨 Gửi mã OTP'}
                             </button>
                             <p className="otp-hint">Bạn sẽ nhận SMS chứa mã xác thực 6 số</p>
                         </>
@@ -680,6 +757,39 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                     font-size: 11px;
                     color: #64748b;
                     margin: 6px 0 0;
+                }
+
+                /* Carrier Detection */
+                .otp-carrier-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    font-size: 12px;
+                    animation: slideDown 0.2s ease-out;
+                }
+                .otp-carrier-valid {
+                    background: rgba(34, 197, 94, 0.08);
+                    border: 1px solid rgba(34, 197, 94, 0.2);
+                }
+                .otp-carrier-invalid {
+                    background: rgba(239, 68, 68, 0.08);
+                    border: 1px solid rgba(239, 68, 68, 0.2);
+                }
+                .otp-carrier-icon { font-size: 14px; }
+                .otp-carrier-name { color: #cbd5e1; }
+                .otp-carrier-warn { color: #fca5a5; font-size: 11px; }
+                .otp-carrier-check { margin-left: auto; }
+
+                /* Phone input validation states */
+                .otp-phone-valid {
+                    border-color: rgba(34, 197, 94, 0.4) !important;
+                    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.15) !important;
+                }
+                .otp-phone-invalid {
+                    border-color: rgba(239, 68, 68, 0.4) !important;
+                    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.15) !important;
                 }
             `}</style>
         </div>
