@@ -3,23 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { otpStore, checkIPRateLimit, checkResendLimit, OTP_CONFIG, maskPhone } from '@/lib/otp-store';
 import { sendOTP, isSMSConfigured } from '@/lib/sms';
 import { getClientIP } from '@/lib/rate-limiter';
+import { validatePhone, toInternational } from '@/lib/phone-validator';
 import crypto from 'crypto';
 
 function generateOTP(): string {
     return crypto.randomInt(100000, 999999).toString();
-}
-
-function normalizePhone(phone: string): string {
-    let cleaned = phone.replace(/[\s\-().]/g, '');
-    if (cleaned.startsWith('+84')) cleaned = '0' + cleaned.slice(3);
-    if (cleaned.startsWith('84') && cleaned.length === 11) cleaned = '0' + cleaned.slice(2);
-    return cleaned;
-}
-
-function toInternational(phone: string): string {
-    if (phone.startsWith('0')) return '+84' + phone.slice(1);
-    if (phone.startsWith('+84')) return phone;
-    return '+84' + phone;
 }
 
 export async function POST(req: NextRequest) {
@@ -40,12 +28,19 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const normalized = normalizePhone(phone);
+        // ── Multi-layer phone validation (Level 1→3) ──
+        const validation = validatePhone(phone);
 
-        // Validate VN phone format
-        if (!/^0[35789]\d{8}$/.test(normalized)) {
-            return NextResponse.json({ success: false, error: 'Số điện thoại không hợp lệ' }, { status: 400 });
+        if (!validation.valid) {
+            return NextResponse.json({
+                success: false,
+                error: validation.errors[0] || 'Số điện thoại không hợp lệ',
+                validationLevel: validation.level,
+                riskScore: validation.riskScore,
+            }, { status: 400 });
         }
+
+        const normalized = validation.phone.normalized;
 
         // ── IP Rate Limit (5 requests / hour) ──
         const ip = getClientIP(req);
@@ -124,6 +119,14 @@ export async function POST(req: NextRequest) {
             resend_cooldown: OTP_CONFIG.RESEND_COOLDOWN_MS / 1000,
             provider: smsResult.provider || 'fallback',
             sms_sent: !smsFailed,
+            // Carrier & validation info
+            carrier: validation.carrier ? {
+                name: validation.carrier.name,
+                code: validation.carrier.code,
+                icon: validation.carrier.icon,
+            } : null,
+            riskScore: validation.riskScore,
+            validationLevel: validation.level,
             // Show OTP on screen when SMS unavailable or in console mode
             ...(isConsole ? { devOtp: code } : {}),
         });
