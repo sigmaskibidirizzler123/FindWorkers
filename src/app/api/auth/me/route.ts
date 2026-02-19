@@ -63,6 +63,9 @@ export async function GET() {
             phone: user.phone,
             role: user.role,
             avatarUrl: user.avatarUrl,
+            phoneVerified: (user as any).phoneVerified,
+            emailVerified: (user as any).emailVerified,
+            firebaseUid: (user as any).firebaseUid,
             isActive: user.isActive,
             isVerified: user.isVerified,
             // Check relations safely

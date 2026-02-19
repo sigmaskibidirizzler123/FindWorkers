@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { getFirebaseAuth, isFirebaseConfigured, RecaptchaVerifier, signInWithPhoneNumber } from '@/lib/firebase';
-import { ConfirmationResult } from 'firebase/auth';
+import { useState, useEffect } from 'react';
 
 interface PhoneOTPProps {
     onVerified: (data: { phone: string; firebaseIdToken: string; firebaseUid: string }) => void;
@@ -18,8 +16,6 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [countdown, setCountdown] = useState(0);
-    const [confirmResult, setConfirmResult] = useState<ConfirmationResult | null>(null);
-    const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
     // Countdown timer
     useEffect(() => {
@@ -27,35 +23,6 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
         return () => clearTimeout(timer);
     }, [countdown]);
-
-    // Initialize reCAPTCHA
-    const setupRecaptcha = useCallback(() => {
-        if (recaptchaRef.current) return;
-
-        try {
-            const firebaseAuth = getFirebaseAuth();
-            recaptchaRef.current = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-                size: 'invisible',
-                callback: () => {
-                    console.log('[reCAPTCHA] Verified');
-                },
-                'expired-callback': () => {
-                    console.log('[reCAPTCHA] Expired');
-                    recaptchaRef.current = null;
-                },
-            });
-        } catch (err) {
-            console.error('[reCAPTCHA] Setup error:', err);
-        }
-    }, []);
-
-    // Format phone for Firebase (+84)
-    const formatPhoneForFirebase = (p: string): string => {
-        let cleaned = p.replace(/[\s\-().]/g, '');
-        if (cleaned.startsWith('0')) cleaned = '+84' + cleaned.slice(1);
-        else if (!cleaned.startsWith('+')) cleaned = '+84' + cleaned;
-        return cleaned;
-    };
 
     // Validate VN phone
     const isValidPhone = (p: string): boolean => {
@@ -65,7 +32,14 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         return false;
     };
 
-    // Send OTP
+    // Normalize phone to 0xxx format
+    const normalizePhone = (p: string): string => {
+        let cleaned = p.replace(/[\s\-().]/g, '');
+        if (cleaned.startsWith('+84')) cleaned = '0' + cleaned.slice(3);
+        return cleaned;
+    };
+
+    // Send OTP via backend
     const handleSendOTP = async () => {
         if (!isValidPhone(phone)) {
             setError('Số điện thoại không hợp lệ (VD: 0907697043)');
@@ -76,48 +50,37 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         setError('');
 
         try {
-            setupRecaptcha();
+            const res = await fetch('/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    phone: normalizePhone(phone),
+                    mode,
+                }),
+            });
 
-            if (!recaptchaRef.current) {
-                throw new Error('reCAPTCHA chưa sẵn sàng. Vui lòng tải lại trang.');
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.error || 'Không thể gửi OTP');
+                return;
             }
 
-            const firebasePhone = formatPhoneForFirebase(phone);
-            const firebaseAuth = getFirebaseAuth();
-            const result = await signInWithPhoneNumber(firebaseAuth, firebasePhone, recaptchaRef.current);
-            setConfirmResult(result);
             setStep('otp');
-            setCountdown(60); // 60 second cooldown before resend
+            setCountdown(60);
             setError('');
-        } catch (err: unknown) {
-            console.error('[OTP] Send error:', err);
-            const firebaseErr = err as { code?: string; message?: string };
-            if (firebaseErr.code === 'auth/too-many-requests') {
-                setError('Bạn đã gửi quá nhiều lần. Vui lòng đợi ít phút.');
-            } else if (firebaseErr.code === 'auth/invalid-phone-number') {
-                setError('Số điện thoại không hợp lệ.');
-            } else if (firebaseErr.code === 'auth/quota-exceeded') {
-                setError('Hết quota SMS. Vui lòng liên hệ admin.');
-            } else {
-                setError(firebaseErr.message || 'Không thể gửi OTP. Vui lòng thử lại.');
-            }
-            // Reset reCAPTCHA on error
-            recaptchaRef.current = null;
+        } catch {
+            setError('Lỗi kết nối server. Vui lòng thử lại.');
         } finally {
             setLoading(false);
         }
     };
 
-    // Verify OTP
+    // Verify OTP via backend
     const handleVerifyOTP = async () => {
         if (otp.length !== 6) {
             setError('Mã OTP phải có 6 chữ số');
-            return;
-        }
-
-        if (!confirmResult) {
-            setError('Phiên xác thực đã hết hạn. Vui lòng gửi lại OTP.');
-            setStep('phone');
             return;
         }
 
@@ -125,19 +88,15 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         setError('');
 
         try {
-            const credential = await confirmResult.confirm(otp);
-            const idToken = await credential.user.getIdToken();
-            const uid = credential.user.uid;
-
-            // Verify with our backend
-            const res = await fetch('/api/auth/verify-phone', {
+            const normalizedPhone = normalizePhone(phone);
+            const res = await fetch('/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                    firebaseIdToken: idToken,
-                    phone: phone,
-                    mode: mode,
+                    phone: normalizedPhone,
+                    otp,
+                    mode,
                 }),
             });
 
@@ -150,23 +109,12 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
 
             setStep('verified');
             onVerified({
-                phone: phone.replace(/[\s\-().]/g, '').startsWith('+84')
-                    ? '0' + phone.replace(/[\s\-().]/g, '').slice(3)
-                    : phone.replace(/[\s\-().]/g, ''),
-                firebaseIdToken: idToken,
-                firebaseUid: uid,
+                phone: normalizedPhone,
+                firebaseIdToken: data.token || '',
+                firebaseUid: data.verificationId || '',
             });
-        } catch (err: unknown) {
-            console.error('[OTP] Verify error:', err);
-            const firebaseErr = err as { code?: string; message?: string };
-            if (firebaseErr.code === 'auth/invalid-verification-code') {
-                setError('Mã OTP không chính xác. Vui lòng kiểm tra lại.');
-            } else if (firebaseErr.code === 'auth/code-expired') {
-                setError('Mã OTP đã hết hạn. Vui lòng gửi lại.');
-                setStep('phone');
-            } else {
-                setError(firebaseErr.message || 'Xác thực thất bại.');
-            }
+        } catch {
+            setError('Lỗi kết nối server.');
         } finally {
             setLoading(false);
         }
@@ -174,7 +122,6 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
 
     // Resend OTP
     const handleResend = async () => {
-        recaptchaRef.current = null;
         setOtp('');
         setError('');
         await handleSendOTP();
@@ -182,9 +129,6 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
 
     return (
         <div className="phone-otp-container">
-            {/* Invisible reCAPTCHA container */}
-            <div id="recaptcha-container"></div>
-
             {step === 'phone' && (
                 <div className="otp-step">
                     <label className="otp-label">

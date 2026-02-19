@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import {
     User, Phone, MapPin, Briefcase, Clock, Loader2,
-    ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Zap
+    ArrowRight, ArrowLeft, CheckCircle2, AlertCircle, Zap, Mail, ShieldCheck
 } from 'lucide-react';
 import { getCandidateCompletionStatus, FIELD_LABELS } from '@/lib/profile-helpers';
 
@@ -71,6 +71,7 @@ export default function CandidateProfilePage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
     const [formData, setFormData] = useState<ProfileData>(INITIAL_FORM);
 
     // ── Fetch existing profile on mount ──
@@ -158,6 +159,31 @@ export default function CandidateProfilePage() {
             setLoading(false);
         }
     };
+
+    // ── Resend Email Verification ──
+    const handleVerifyEmail = async () => {
+        if (!user?.email) return;
+        setEmailVerifyLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+            const res = await fetch('/api/auth/verify-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSuccess('Đã gửi email xác thực! Vui lòng kiểm tra hộp thư.');
+            } else {
+                setError(data.error || 'Gửi email thất bại');
+            }
+        } catch {
+            setError('Lỗi kết nối server');
+        } finally {
+            setEmailVerifyLoading(false);
+        }
+    };
+
 
     // ── Profile completion ──
     const completion = getCandidateCompletionStatus({
@@ -260,6 +286,62 @@ export default function CandidateProfilePage() {
                     {success}
                 </div>
             )}
+
+            {/* ── Account Status Card ── */}
+            <div className="glass-card p-4 mb-6 animate-slide-up border border-slate-700/50">
+                <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-400" />
+                    Trạng thái tài khoản
+                </h3>
+                <div className="space-y-3">
+                    {/* Phone Status */}
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-full bg-slate-700/50">
+                                <Phone className="w-4 h-4 text-slate-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-white">{user?.phone}</p>
+                                <p className="text-xs text-green-400 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Đã xác thực
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Email Status */}
+                    {user?.email && (
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-full bg-slate-700/50">
+                                    <Mail className="w-4 h-4 text-slate-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-white">{user.email}</p>
+                                    {user.emailVerified ? (
+                                        <p className="text-xs text-green-400 flex items-center gap-1">
+                                            <CheckCircle2 className="w-3 h-3" /> Đã xác thực
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-amber-400 flex items-center gap-1">
+                                            <AlertCircle className="w-3 h-3" /> Chưa xác thực
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            {!user.emailVerified && (
+                                <button
+                                    onClick={handleVerifyEmail}
+                                    disabled={emailVerifyLoading}
+                                    className="text-xs bg-blue-500/10 text-blue-400 px-3 py-1.5 rounded-full hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                                >
+                                    {emailVerifyLoading ? 'Đang gửi...' : 'Xác thực ngay'}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* ── Form ── */}
             <div className="glass-card p-6 animate-slide-up">

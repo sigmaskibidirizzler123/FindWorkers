@@ -8,6 +8,9 @@ interface User {
     phone?: string | null;
     role: string;
     avatarUrl?: string;
+    phoneVerified?: boolean;
+    emailVerified?: boolean;
+    firebaseUid?: string;
     candidateProfile?: Record<string, unknown>;
     employerProfile?: Record<string, unknown>;
 }

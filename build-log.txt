@@ -1,0 +1,166 @@
+﻿node.exe : ΓÜá `eslint` configuration in next.config.ts is no longer supported. See more info here: 
+https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\PC\AppData\Roaming\npm ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (ΓÜá `eslint` co...xt-lint-options:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ΓÜá Invalid next.config.ts options detected: 
+ΓÜá     Unrecognized key(s) in object: 'eslint'
+ΓÜá See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\PC\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's 
+not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\PC\Desktop\FindWorkers\findworkers-app\package-lock.json
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: 
+https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 5.0s
+  Skipping validation of types
+  Collecting page data using 11 workers ...
+{"timestamp":"2026-02-18T09:46:54.127Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.130Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.130Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.131Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.131Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.131Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.299Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.302Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.302Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.303Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.303Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.303Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.302Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.304Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.304Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.304Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.304Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.305Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.320Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.322Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.322Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.322Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.322Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.322Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.325Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.327Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.327Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.328Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.328Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.328Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.328Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.331Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.332Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.332Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.332Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.332Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.335Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.338Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.337Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.341Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.342Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.343Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.388Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.390Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.391Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.391Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.391Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.391Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.392Z","level":"info","message":"Initializing modules...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.394Z","level":"info","message":"Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.394Z","level":"info","message":"Event handlers registered","service":"findworkers.automation","context":{"stats":{"application.created":1,"application.status_changed":1,"application.hired":1,"job.created":1,"job.closed":1,"user.registered":1,"user.login":1}}}
+{"timestamp":"2026-02-18T09:46:54.395Z","level":"info","message":"[Webhook Handlers] Registering event handlers...","service":"findworkers.automation"}
+{"timestamp":"2026-02-18T09:46:54.395Z","level":"info","message":"[Webhook Handlers] Γ£à All handlers registered","service":"findworkers.automation","context":{"events":["application.created","application.status_changed","user.registered","job.created"]}}
+{"timestamp":"2026-02-18T09:46:54.395Z","level":"info","message":"Modules initialized successfully","service":"findworkers.automation"}
+  Generating static pages using 11 workers (0/57) ...
+  Generating static pages using 11 workers (14/57) 
+  Generating static pages using 11 workers (28/57) 
+  Generating static pages using 11 workers (42/57) 
+Γ£ô Generating static pages using 11 workers (57/57) in 669.7ms
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /admin
+Γö£ Γùï /admin/analytics
+Γö£ Γùï /admin/categories
+Γö£ Γùï /admin/companies
+Γö£ Γùï /admin/jobs
+Γö£ Γùï /admin/logs
+Γö£ Γùï /admin/users
+Γö£ ╞Æ /api/admin/analytics
+Γö£ ╞Æ /api/admin/categories
+Γö£ ╞Æ /api/admin/companies
+Γö£ ╞Æ /api/admin/create-employer
+Γö£ ╞Æ /api/admin/feature-flags
+Γö£ ╞Æ /api/admin/jobs
+Γö£ ╞Æ /api/admin/logs
+Γö£ ╞Æ /api/admin/users
+Γö£ ╞Æ /api/apply-quick
+Γö£ ╞Æ /api/apply-quick/approve
+Γö£ ╞Æ /api/auth/login
+Γö£ ╞Æ /api/auth/logout
+Γö£ ╞Æ /api/auth/me
+Γö£ ╞Æ /api/auth/register
+Γö£ ╞Æ /api/auth/send-otp
+Γö£ ╞Æ /api/auth/verify-email
+Γö£ ╞Æ /api/auth/verify-otp
+Γö£ ╞Æ /api/auth/verify-phone
+Γö£ ╞Æ /api/automation/cron
+Γö£ ╞Æ /api/categories
+Γö£ ╞Æ /api/employer/branches
+Γö£ ╞Æ /api/employer/dashboard
+Γö£ ╞Æ /api/employer/jobs
+Γö£ ╞Æ /api/employer/jobs/[id]
+Γö£ ╞Æ /api/job-templates
+Γö£ ╞Æ /api/job-templates/[id]
+Γö£ ╞Æ /api/jobs
+Γö£ ╞Æ /api/jobs/[id]
+Γö£ ╞Æ /api/jobs/[id]/applications
+Γö£ ╞Æ /api/jobs/[id]/applications/[applicationId]
+Γö£ ╞Æ /api/notifications
+Γö£ ╞Æ /api/profile/candidate
+Γö£ ╞Æ /api/profile/employer
+Γö£ ╞Æ /api/test-webhook
+Γö£ ╞Æ /api/upload
+Γö£ ╞Æ /api/v1/auth/login
+Γö£ ╞Æ /api/v1/auth/register
+Γö£ ╞Æ /api/v1/jobs
+Γö£ ╞Æ /api/webhooks/n8n
+Γö£ Γùï /auth/login
+Γö£ Γùï /auth/register
+Γö£ Γùï /candidate/applications
+Γö£ Γùï /candidate/profile
+Γö£ Γùï /candidate/profile/create
+Γö£ Γùï /categories
+Γö£ Γùï /employer/dashboard
+Γö£ ╞Æ /employer/jobs/[id]/edit
+Γö£ Γùï /employer/jobs/create
+Γö£ Γùï /employer/profile
+Γö£ Γùï /employer/profile/create
+Γö£ Γùï /jobs
+Γö£ ╞Æ /jobs/[id]
+Γö£ Γùï /robots.txt
+Γöö Γùï /sitemap.xml
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
