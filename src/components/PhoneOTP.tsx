@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { getFirebaseAuth, isFirebaseConfigured, RecaptchaVerifier, signInWithPhoneNumber } from '@/lib/firebase';
+import { ConfirmationResult } from 'firebase/auth';
 
 interface PhoneOTPProps {
     onVerified: (data: { phone: string; firebaseIdToken: string; firebaseUid: string }) => void;
@@ -21,6 +23,9 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
     const [attemptsInfo, setAttemptsInfo] = useState('');
     const [devOtp, setDevOtp] = useState('');
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const recaptchaVerifierRef = useRef<InstanceType<typeof RecaptchaVerifier> | null>(null);
+    const useFirebase = isFirebaseConfigured;
 
     // Countdown timer
     useEffect(() => {
@@ -145,6 +150,28 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         }
     };
 
+    // ── Initialize reCAPTCHA for Firebase ──
+    const setupRecaptcha = useCallback(() => {
+        if (!useFirebase) return;
+        try {
+            const auth = getFirebaseAuth();
+            if (!recaptchaVerifierRef.current) {
+                recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    size: 'invisible',
+                    callback: () => {
+                        console.log('[Firebase] reCAPTCHA solved');
+                    },
+                });
+            }
+        } catch (err) {
+            console.error('[Firebase] reCAPTCHA setup error:', err);
+        }
+    }, [useFirebase]);
+
+    useEffect(() => {
+        setupRecaptcha();
+    }, [setupRecaptcha]);
+
     // ── STEP 1: Send OTP ──
     const handleSendOTP = async () => {
         if (!isValidPhone(phone)) {
@@ -155,35 +182,78 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         setLoading(true);
         setError('');
         setAttemptsInfo('');
+        setDevOtp('');
 
+        const normalizedPhone = normalizePhone(phone);
+        const internationalPhone = '+84' + normalizedPhone.slice(1);
+
+        // ── Firebase Phone Auth (SMS thật) ──
+        if (useFirebase) {
+            try {
+                setupRecaptcha();
+                const auth = getFirebaseAuth();
+                const appVerifier = recaptchaVerifierRef.current;
+                if (!appVerifier) {
+                    setError('Không thể khởi tạo reCAPTCHA. Vui lòng tải lại trang.');
+                    setLoading(false);
+                    return;
+                }
+
+                console.log(`[Firebase] Sending OTP to ${internationalPhone}`);
+                const result = await signInWithPhoneNumber(auth, internationalPhone, appVerifier);
+                setConfirmationResult(result);
+
+                setStep('otp');
+                setCountdown(60);
+                setMaskedPhone(maskPhoneDisplay(phone));
+                setOtp(['', '', '', '', '', '']);
+                setError('');
+                setSendsRemaining(prev => prev - 1);
+
+                console.log(`[Firebase] ✅ OTP sent successfully to ${maskPhoneDisplay(phone)}`);
+                setTimeout(() => inputRefs.current[0]?.focus(), 150);
+            } catch (err: unknown) {
+                console.error('[Firebase] Send OTP error:', err);
+                const firebaseError = err as { code?: string; message?: string };
+
+                // Reset reCAPTCHA on error
+                if (recaptchaVerifierRef.current) {
+                    try { recaptchaVerifierRef.current.clear(); } catch { /* ignore */ }
+                    recaptchaVerifierRef.current = null;
+                }
+
+                if (firebaseError.code === 'auth/too-many-requests') {
+                    setError('Quá nhiều yêu cầu. Vui lòng chờ vài phút rồi thử lại.');
+                } else if (firebaseError.code === 'auth/invalid-phone-number') {
+                    setError('Số điện thoại không hợp lệ.');
+                } else if (firebaseError.code === 'auth/quota-exceeded') {
+                    setError('Đã vượt quá giới hạn SMS. Vui lòng thử lại sau.');
+                } else {
+                    setError(firebaseError.message || 'Không thể gửi OTP. Vui lòng thử lại.');
+                }
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
+        // ── Fallback: Custom API OTP (khi Firebase không khả dụng) ──
         try {
             const res = await fetch('/api/auth/send-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    phone: normalizePhone(phone),
-                    mode,
-                }),
+                body: JSON.stringify({ phone: normalizedPhone, mode }),
             });
-
             const data = await res.json();
-
-            if (!data.success) {
-                setError(data.error || 'Không thể gửi OTP');
-                return;
-            }
+            if (!data.success) { setError(data.error || 'Không thể gửi OTP'); return; }
 
             setStep('otp');
             setCountdown(data.resend_cooldown || 60);
             setMaskedPhone(data.phone_masked || maskPhoneDisplay(phone));
             setOtp(['', '', '', '', '', '']);
             setError('');
-            // Show OTP on screen if SMS unavailable
-            if (data.devOtp) {
-                setDevOtp(data.devOtp);
-            }
-
+            if (data.devOtp) setDevOtp(data.devOtp);
             setTimeout(() => inputRefs.current[0]?.focus(), 150);
         } catch {
             setError('Lỗi kết nối server. Vui lòng thử lại.');
@@ -204,29 +274,57 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         setError('');
         setAttemptsInfo('');
 
+        const normalizedPhone = normalizePhone(phone);
+
+        // ── Firebase verify ──
+        if (useFirebase && confirmationResult) {
+            try {
+                const credential = await confirmationResult.confirm(code);
+                const user = credential.user;
+                const idToken = await user.getIdToken();
+
+                console.log(`[Firebase] ✅ OTP verified! UID: ${user.uid}`);
+
+                setStep('verified');
+                onVerified({
+                    phone: normalizedPhone,
+                    firebaseIdToken: idToken,
+                    firebaseUid: user.uid,
+                });
+            } catch (err: unknown) {
+                console.error('[Firebase] Verify error:', err);
+                const firebaseError = err as { code?: string };
+
+                if (firebaseError.code === 'auth/invalid-verification-code') {
+                    setError('Mã OTP không đúng. Vui lòng kiểm tra lại.');
+                } else if (firebaseError.code === 'auth/code-expired') {
+                    setError('Mã OTP đã hết hạn. Vui lòng gửi lại.');
+                } else {
+                    setError('Xác thực thất bại. Vui lòng thử lại.');
+                }
+                setOtp(['', '', '', '', '', '']);
+                inputRefs.current[0]?.focus();
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
+        // ── Fallback: Custom API verify ──
         try {
-            const normalizedPhone = normalizePhone(phone);
             const res = await fetch('/api/auth/verify-otp', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({
-                    phone: normalizedPhone,
-                    otp_code: code,
-                    mode,
-                }),
+                body: JSON.stringify({ phone: normalizedPhone, otp_code: code, mode }),
             });
-
             const data = await res.json();
-
             if (!data.success) {
                 setError(data.error || 'Xác thực thất bại');
                 setOtp(['', '', '', '', '', '']);
                 inputRefs.current[0]?.focus();
                 return;
             }
-
-            // ── SUCCESS → Chỉ xác thực phone, chuyển sang bước 3 (mật khẩu) ──
             setStep('verified');
             onVerified({
                 phone: normalizedPhone,
@@ -245,7 +343,51 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
         setLoading(true);
         setError('');
         setOtp(['', '', '', '', '', '']);
+        setDevOtp('');
 
+        // Firebase: gửi lại bằng cách gọi signInWithPhoneNumber lại
+        if (useFirebase) {
+            try {
+                // Reset reCAPTCHA
+                if (recaptchaVerifierRef.current) {
+                    try { recaptchaVerifierRef.current.clear(); } catch { /* ignore */ }
+                    recaptchaVerifierRef.current = null;
+                }
+                setupRecaptcha();
+
+                const auth = getFirebaseAuth();
+                const appVerifier = recaptchaVerifierRef.current;
+                if (!appVerifier) {
+                    setError('Không thể gửi lại. Vui lòng tải lại trang.');
+                    setLoading(false);
+                    return;
+                }
+
+                const normalizedPhone = normalizePhone(phone);
+                const internationalPhone = '+84' + normalizedPhone.slice(1);
+                const result = await signInWithPhoneNumber(auth, internationalPhone, appVerifier);
+                setConfirmationResult(result);
+
+                setCountdown(60);
+                setSendsRemaining(prev => prev - 1);
+                setAttemptsInfo('Đã gửi lại mã mới!');
+                setTimeout(() => setAttemptsInfo(''), 3000);
+                setTimeout(() => inputRefs.current[0]?.focus(), 150);
+            } catch (err: unknown) {
+                console.error('[Firebase] Resend error:', err);
+                const firebaseError = err as { code?: string; message?: string };
+                if (firebaseError.code === 'auth/too-many-requests') {
+                    setError('Quá nhiều yêu cầu. Vui lòng chờ vài phút.');
+                } else {
+                    setError(firebaseError.message || 'Không thể gửi lại.');
+                }
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
+        // Fallback: custom API
         try {
             const res = await fetch('/api/auth/resend-otp', {
                 method: 'POST',
@@ -253,14 +395,8 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                 credentials: 'include',
                 body: JSON.stringify({ phone: normalizePhone(phone) }),
             });
-
             const data = await res.json();
-
-            if (!data.success) {
-                setError(data.error || 'Không thể gửi lại');
-                return;
-            }
-
+            if (!data.success) { setError(data.error || 'Không thể gửi lại'); return; }
             setCountdown(data.resend_cooldown || 60);
             setSendsRemaining(data.sends_remaining ?? sendsRemaining - 1);
             setAttemptsInfo('Đã gửi lại mã mới!');
@@ -275,6 +411,8 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
 
     return (
         <div className="phone-otp-container">
+            {/* reCAPTCHA container (invisible) */}
+            <div id="recaptcha-container"></div>
             {/* ════════ STEP 1: Phone Input ════════ */}
             {step !== 'verified' && (
                 <div className="otp-section">
@@ -328,7 +466,7 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                             >
                                 {loading ? '⏳ Đang gửi...' : '📨 Gửi mã OTP'}
                             </button>
-                            <p className="otp-hint">Bạn sẽ nhận SMS chứa mã xác thực 6 số</p>
+                            <p className="otp-hint">{useFirebase ? '🔥 SMS gửi qua Firebase (miễn phí)' : 'Bạn sẽ nhận SMS chứa mã xác thực 6 số'}</p>
                         </>
                     )}
                 </div>

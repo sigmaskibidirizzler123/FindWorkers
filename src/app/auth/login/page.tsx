@@ -180,7 +180,12 @@ function LoginForm() {
 
                         {/* Password */}
                         <div>
-                            <label htmlFor="login-password" className="input-label">Mật khẩu</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label htmlFor="login-password" className="input-label !mb-0">Mật khẩu</label>
+                                <Link href="/auth/forgot-password" className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors">
+                                    Quên mật khẩu?
+                                </Link>
+                            </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                                 <input

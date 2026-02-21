@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Use production URL so approve links always go to latest deployment
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://find-workers-p7ka.vercel.app';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const employerEmail = job.employer?.user?.email || undefined;
 
         try {

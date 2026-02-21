@@ -99,14 +99,24 @@ export async function POST(req: NextRequest) {
 
         if (!smsResult.success) {
             console.error(`[send-otp] SMS failed:`, smsResult.error);
-            console.log(`[send-otp] Fallback: returning OTP directly for ${maskedPhone}`);
+
+            // Production: block if SMS fails (no fallback)
+            if (process.env.NODE_ENV === 'production' && smsResult.provider !== 'console') {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Không thể gửi mã OTP. Vui lòng thử lại sau.',
+                }, { status: 503 });
+            }
+
+            console.log(`[send-otp] DEV fallback: showing OTP on screen for ${maskedPhone}`);
             smsFailed = true;
-            // Don't block registration - fallback to showing OTP on screen
         } else {
-            console.log(`[send-otp] OTP sent to ${maskedPhone} via ${smsResult.provider}`);
+            console.log(`[send-otp] ✅ OTP sent to ${maskedPhone} via ${smsResult.provider}`);
         }
 
-        const isConsole = smsResult.provider === 'console' || smsFailed;
+        // Only show devOtp in development mode
+        const isDev = process.env.NODE_ENV !== 'production';
+        const showDevOtp = isDev && (smsResult.provider === 'console' || smsFailed);
 
         return NextResponse.json({
             success: true,
@@ -127,8 +137,8 @@ export async function POST(req: NextRequest) {
             } : null,
             riskScore: validation.riskScore,
             validationLevel: validation.level,
-            // Show OTP on screen when SMS unavailable or in console mode
-            ...(isConsole ? { devOtp: code } : {}),
+            // DevOtp: ONLY in development mode, NEVER in production
+            ...(showDevOtp ? { devOtp: code } : {}),
         });
 
     } catch (error) {

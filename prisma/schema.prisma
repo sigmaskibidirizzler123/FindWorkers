@@ -78,6 +78,8 @@ model User {
   emailVerified       Boolean   @default(false)
   emailVerifyToken    String?   @unique
   emailVerifyExpires  DateTime?
+  resetPasswordToken  String?   @unique
+  resetPasswordExpires DateTime?
   firebaseUid         String?   @unique    // Firebase Auth UID
   avatarUrl           String?
   lastLoginAt         DateTime?

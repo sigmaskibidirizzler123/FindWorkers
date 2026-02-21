@@ -33,6 +33,7 @@ import { authLogger } from '@/lib/logger';
 import { eventBus } from '@/lib/events';
 import { getClientIP } from '@/lib/rate-limiter';
 import { checkBlacklists } from '@/lib/blacklist';
+import { verifyFirebaseToken } from '@/lib/firebase-admin';
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -229,7 +230,7 @@ export class AuthService {
     static async registerCandidate(request: NextRequest) {
         try {
             const body = await request.json();
-            const { phone, password, email, firebaseUid } = body;
+            const { phone, password, email, firebaseUid, firebaseIdToken } = body;
 
             // Validate phone
             if (!phone) {
@@ -278,6 +279,29 @@ export class AuthService {
                 }
             }
 
+            let phoneVerified = false;
+            let verifiedUid = null;
+
+            if (firebaseIdToken) {
+                try {
+                    const decodedToken = await verifyFirebaseToken(firebaseIdToken);
+                    if (decodedToken && decodedToken.uid === firebaseUid) {
+                        phoneVerified = true;
+                        verifiedUid = decodedToken.uid;
+                    } else {
+                        authLogger.warn('Firebase token verification failed: UID mismatch or invalid token', { firebaseUid, decodedUid: decodedToken?.uid });
+                        return errorResponse('Xác thực Firebase thất bại', 401);
+                    }
+                } catch (firebaseError) {
+                    authLogger.error('Firebase token verification error', { firebaseError });
+                    return errorResponse('Xác thực Firebase thất bại', 401);
+                }
+            } else if (firebaseUid) {
+                // If firebaseUid is provided without a token, assume it's pre-verified (e.g., from a direct OTP flow)
+                phoneVerified = true;
+                verifiedUid = firebaseUid;
+            }
+
             const hashedPassword = await hashPassword(password);
 
             const user = await prisma.user.create({
@@ -286,8 +310,8 @@ export class AuthService {
                     email: email ? email.toLowerCase().trim() : null,
                     password: hashedPassword,
                     role: 'CANDIDATE',
-                    phoneVerified: !!firebaseUid,  // Verified if Firebase OTP was used
-                    firebaseUid: firebaseUid || null,
+                    phoneVerified,
+                    firebaseUid: verifiedUid,
                 },
             });
 

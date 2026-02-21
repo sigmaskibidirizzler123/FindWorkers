@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Send verification email
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://find-workers-p7ka.vercel.app';
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const verifyUrl = `${baseUrl}/api/auth/verify-email?token=${verifyTokenStr}`;
 
         await transporter.sendMail({

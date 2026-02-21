@@ -41,10 +41,10 @@ function RegisterForm() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Phone verification state
     const [phoneVerified, setPhoneVerified] = useState(false);
     const [verifiedPhone, setVerifiedPhone] = useState('');
     const [firebaseUid, setFirebaseUid] = useState('');
+    const [firebaseIdToken, setFirebaseIdToken] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,6 +90,7 @@ function RegisterForm() {
                     password: candidateData.password,
                     email: candidateData.email || undefined,
                     firebaseUid: firebaseUid || undefined,
+                    firebaseIdToken: firebaseIdToken || undefined,
                 }
                 : {
                     role: 'EMPLOYER',
@@ -198,6 +199,7 @@ function RegisterForm() {
                                                 setPhoneVerified(true);
                                                 setVerifiedPhone(data.phone);
                                                 setFirebaseUid(data.firebaseUid);
+                                                setFirebaseIdToken(data.firebaseIdToken);
                                                 setCandidateData(prev => ({ ...prev, phone: data.phone }));
                                             }}
                                         />
