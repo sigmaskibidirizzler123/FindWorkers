@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import {
     Building2, Phone, MapPin, Loader2, ArrowRight, ArrowLeft,
-    CheckCircle2, AlertCircle, FileText, Store, Camera, X, ImageIcon, ShieldCheck, Mail
+    CheckCircle2, AlertCircle, FileText, Store, Camera, X, ImageIcon, ShieldCheck, Mail,
+    Lock, Eye, EyeOff, KeyRound
 } from 'lucide-react';
 import { getEmployerCompletionStatus, FIELD_LABELS } from '@/lib/profile-helpers';
 
@@ -69,6 +70,17 @@ export default function EmployerProfilePage() {
     const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const companyImagesInputRef = useRef<HTMLInputElement>(null);
+
+    // Change Password states
+    const [showPasswordForm, setShowPasswordForm] = useState(false);
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmNewPassword, setConfirmNewPassword] = useState('');
+    const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+    const [showNewPwd, setShowNewPwd] = useState(false);
+    const [changePwdLoading, setChangePwdLoading] = useState(false);
+    const [changePwdError, setChangePwdError] = useState('');
+    const [changePwdSuccess, setChangePwdSuccess] = useState('');
 
     // ── Fetch existing profile on mount ──
     const loadProfile = useCallback(async () => {
@@ -180,6 +192,52 @@ export default function EmployerProfilePage() {
 
     const handleRemoveAvatar = () => {
         setFormData(prev => ({ ...prev, logoUrl: '' }));
+    };
+
+    // ── Change Password ──
+    const handleChangePassword = async () => {
+        setChangePwdError('');
+        setChangePwdSuccess('');
+
+        if (!currentPassword) {
+            setChangePwdError('Vui lòng nhập mật khẩu hiện tại');
+            return;
+        }
+        if (!newPassword || newPassword.length < 6) {
+            setChangePwdError('Mật khẩu mới phải có ít nhất 6 ký tự');
+            return;
+        }
+        if (newPassword !== confirmNewPassword) {
+            setChangePwdError('Mật khẩu mới không trùng khớp');
+            return;
+        }
+
+        setChangePwdLoading(true);
+        try {
+            const res = await fetch('/api/auth/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ currentPassword, newPassword }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setChangePwdSuccess(data.data.message || 'Đổi mật khẩu thành công!');
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmNewPassword('');
+                setTimeout(() => {
+                    setShowPasswordForm(false);
+                    setChangePwdSuccess('');
+                }, 2000);
+            } else {
+                setChangePwdError(data.error || 'Đổi mật khẩu thất bại');
+            }
+        } catch {
+            setChangePwdError('Lỗi kết nối server');
+        } finally {
+            setChangePwdLoading(false);
+        }
     };
 
     // ── Submit ──
@@ -387,6 +445,135 @@ export default function EmployerProfilePage() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* ── Change Password Card ── */}
+            <div className="glass-card p-4 mb-6 animate-slide-up border border-slate-700/50">
+                <button
+                    type="button"
+                    onClick={() => {
+                        setShowPasswordForm(!showPasswordForm);
+                        setChangePwdError('');
+                        setChangePwdSuccess('');
+                    }}
+                    className="w-full flex items-center justify-between"
+                >
+                    <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                        <KeyRound className="w-4 h-4 text-amber-400" />
+                        Đổi mật khẩu
+                    </h3>
+                    <span className={`text-xs text-slate-500 transition-transform ${showPasswordForm ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+
+                {showPasswordForm && (
+                    <div className="mt-4 space-y-4 border-t border-slate-700/50 pt-4">
+                        {changePwdError && (
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400 flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                {changePwdError}
+                            </div>
+                        )}
+                        {changePwdSuccess && (
+                            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-green-400 flex items-center gap-2">
+                                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                                {changePwdSuccess}
+                            </div>
+                        )}
+
+                        {/* Current Password */}
+                        <div>
+                            <label className="input-label">Mật khẩu hiện tại</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <input
+                                    type={showCurrentPwd ? 'text' : 'password'}
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                    placeholder="Nhập mật khẩu hiện tại"
+                                    className="input-field pl-10 pr-10"
+                                    disabled={changePwdLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPwd(!showCurrentPwd)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                >
+                                    {showCurrentPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* New Password */}
+                        <div>
+                            <label className="input-label">Mật khẩu mới</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <input
+                                    type={showNewPwd ? 'text' : 'password'}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="Tối thiểu 6 ký tự"
+                                    className="input-field pl-10 pr-10"
+                                    disabled={changePwdLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPwd(!showNewPwd)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                >
+                                    {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm New Password */}
+                        <div>
+                            <label className="input-label">Xác nhận mật khẩu mới</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <input
+                                    type={showNewPwd ? 'text' : 'password'}
+                                    value={confirmNewPassword}
+                                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    className="input-field pl-10 pr-10"
+                                    disabled={changePwdLoading}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowPasswordForm(false);
+                                    setCurrentPassword('');
+                                    setNewPassword('');
+                                    setConfirmNewPassword('');
+                                    setChangePwdError('');
+                                    setChangePwdSuccess('');
+                                }}
+                                className="btn-secondary text-sm"
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleChangePassword}
+                                disabled={changePwdLoading}
+                                className="btn-primary text-sm disabled:opacity-50"
+                            >
+                                {changePwdLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <>
+                                        <KeyRound className="w-4 h-4" /> Đổi mật khẩu
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ── Form ── */}
