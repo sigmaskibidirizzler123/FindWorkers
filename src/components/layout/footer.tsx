@@ -9,11 +9,9 @@ export default function Footer() {
                     {/* Brand */}
                     <div className="space-y-4">
                         <Link href="/" className="flex items-center gap-2 group">
-                            <img
-                                src="/logo.svg"
-                                alt="FindWorkers"
-                                className="h-10 w-auto object-contain"
-                            />
+                            <span className="text-2xl font-black tracking-tight text-white">
+                                Find<span className="text-blue-500">Workers</span>
+                            </span>
                         </Link>
                         <p className="text-sm text-slate-400 leading-relaxed">
                             Nền tảng kết nối việc làm thông minh. Tìm việc nhanh, tuyển dụng hiệu quả.

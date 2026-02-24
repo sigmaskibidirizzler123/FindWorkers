@@ -244,12 +244,9 @@ export default function FindWorkersHero() {
 
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-3 mb-4">
-                    <img
-                        src="/logo.svg"
-                        alt="FindWorkers Logo"
-                        className="h-14 md:h-20 w-auto object-contain drop-shadow-2xl"
-                        style={{ filter: 'drop-shadow(0 0 30px rgba(59,130,246,0.3))' }}
-                    />
+                    <h1 className="text-5xl md:text-7xl font-black tracking-tight text-white drop-shadow-2xl" style={{ filter: 'drop-shadow(0 0 30px rgba(59,130,246,0.3))' }}>
+                        Find<span className="text-blue-500">Workers</span>
+                    </h1>
                 </div>
 
                 {/* Typewriter tagline */}

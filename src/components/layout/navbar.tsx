@@ -133,11 +133,9 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        <img
-                            src="/logo.svg"
-                            alt="FindWorkers"
-                            className="h-9 w-auto object-contain"
-                        />
+                        <span className="text-2xl font-black tracking-tight text-white group-hover:text-blue-400 transition-colors">
+                            Find<span className="text-blue-500">Workers</span>
+                        </span>
                     </Link>
 
                     {/* Desktop Nav */}
