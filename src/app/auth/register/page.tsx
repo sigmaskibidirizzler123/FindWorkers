@@ -241,6 +241,7 @@ function RegisterForm() {
                                                     required
                                                     minLength={6}
                                                     autoFocus
+                                                    autoComplete="new-password"
                                                 />
                                                 <button
                                                     type="button"
@@ -265,6 +266,7 @@ function RegisterForm() {
                                                     placeholder="Nhập lại mật khẩu"
                                                     className="input-field pl-11"
                                                     required
+                                                    autoComplete="new-password"
                                                 />
                                             </div>
                                         </div>
@@ -283,6 +285,7 @@ function RegisterForm() {
                                                     onChange={(e) => setCandidateData({ ...candidateData, email: e.target.value })}
                                                     placeholder="your@email.com (tuỳ chọn)"
                                                     className="input-field pl-11"
+                                                    autoComplete="off"
                                                 />
                                             </div>
                                         </div>

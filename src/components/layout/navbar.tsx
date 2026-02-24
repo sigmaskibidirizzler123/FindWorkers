@@ -133,10 +133,11 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-blue-500/25 transition-shadow">
-                            <Briefcase className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-xl font-bold gradient-text hidden sm:block">FindWorkers</span>
+                        <img
+                            src="/logo.svg"
+                            alt="FindWorkers"
+                            className="h-9 w-auto object-contain"
+                        />
                     </Link>
 
                     {/* Desktop Nav */}

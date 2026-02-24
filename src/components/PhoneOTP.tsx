@@ -437,6 +437,7 @@ export default function PhoneOTP({ onVerified, initialPhone = '', disabled = fal
                                     disabled={disabled || loading}
                                     maxLength={12}
                                     id="phone-input"
+                                    autoComplete="off"
                                 />
                             </div>
 

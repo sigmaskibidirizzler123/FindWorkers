@@ -148,6 +148,7 @@ function LoginForm() {
                                         className="input-field pl-11"
                                         required
                                         autoFocus
+                                        autoComplete="off"
                                     />
                                 </div>
                             </div>
@@ -172,6 +173,7 @@ function LoginForm() {
                                         className="input-field pl-11"
                                         required
                                         autoFocus
+                                        autoComplete="off"
                                     />
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1">Nhập SĐT hoặc email doanh nghiệp</p>
@@ -196,6 +198,7 @@ function LoginForm() {
                                     placeholder="••••••••"
                                     className="input-field pl-11 pr-11"
                                     required
+                                    autoComplete="new-password"
                                 />
                                 <button
                                     type="button"
