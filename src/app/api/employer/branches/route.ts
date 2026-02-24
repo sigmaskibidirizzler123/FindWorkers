@@ -1,6 +1,7 @@
 /**
- * Company Branches API
- * GET - List branches for current employer
+ * Employer Branches API
+ * 
+ * GET  - List all branches for the employer
  * POST - Create a new branch
  */
 import { NextRequest } from 'next/server';
@@ -8,6 +9,7 @@ import prisma from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+// ─── GET: List branches ───
 export async function GET(request: NextRequest) {
     try {
         const token = request.cookies.get('token')?.value;
@@ -18,20 +20,19 @@ export async function GET(request: NextRequest) {
             return errorResponse('Không có quyền', 403);
         }
 
-        const employer = await prisma.employerProfile.findUnique({
+        const profile = await prisma.employerProfile.findUnique({
             where: { userId: payload.userId },
+            select: { id: true },
         });
 
-        if (!employer) return errorResponse('Chưa có hồ sơ công ty', 400);
+        if (!profile) return errorResponse('Chưa có hồ sơ doanh nghiệp', 404);
 
         const branches = await prisma.companyBranch.findMany({
-            where: { employerId: employer.id },
+            where: { employerId: profile.id },
+            orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }],
             include: {
-                _count: {
-                    select: { jobs: true },
-                },
+                _count: { select: { jobs: true } },
             },
-            orderBy: { name: 'asc' },
         });
 
         return successResponse(branches);
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
     }
 }
 
+// ─── POST: Create a branch ───
 export async function POST(request: NextRequest) {
     try {
         const token = request.cookies.get('token')?.value;
@@ -51,26 +53,37 @@ export async function POST(request: NextRequest) {
             return errorResponse('Không có quyền', 403);
         }
 
-        const employer = await prisma.employerProfile.findUnique({
+        const profile = await prisma.employerProfile.findUnique({
             where: { userId: payload.userId },
+            select: { id: true },
         });
 
-        if (!employer) return errorResponse('Chưa có hồ sơ công ty', 400);
+        if (!profile) return errorResponse('Chưa có hồ sơ doanh nghiệp', 404);
 
         const body = await request.json();
-        const { name, address, district, city, phone, managerName } = body;
+        const { name, address, phone, managerName, managerPhone, isMain } = body;
 
-        if (!name || !address || !city) {
-            return errorResponse('Tên, địa chỉ và thành phố là bắt buộc', 400);
+        if (!name?.trim() || !address?.trim()) {
+            return errorResponse('Vui lòng nhập tên và địa chỉ chi nhánh', 400);
+        }
+
+        // If setting as main, unset other main branches
+        if (isMain) {
+            await prisma.companyBranch.updateMany({
+                where: { employerId: profile.id, isMain: true },
+                data: { isMain: false },
+            });
         }
 
         const branch = await prisma.companyBranch.create({
             data: {
-                employerId: employer.id,
-                name,
-                address,
-                phone,
-                managerName,
+                employerId: profile.id,
+                name: name.trim(),
+                address: address.trim(),
+                phone: phone?.trim() || null,
+                managerName: managerName?.trim() || null,
+                managerPhone: managerPhone?.trim() || null,
+                isMain: isMain || false,
             },
         });
 

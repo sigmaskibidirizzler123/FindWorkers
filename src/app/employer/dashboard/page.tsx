@@ -7,7 +7,8 @@ import {
     Plus, ChevronRight, MapPin, Zap, Star, BarChart3,
     CalendarDays, Building2, GitBranch, ArrowUpRight,
     Filter, MoreHorizontal, CheckCircle2, XCircle,
-    Copy, Pencil, RotateCcw, Loader2, ChevronDown
+    Copy, Pencil, RotateCcw, Loader2, ChevronDown,
+    Camera, Store
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -56,12 +57,20 @@ const DEFAULT_STATS: DashboardStats = {
     conversionRate: 0,
 };
 
+interface EmployerInfo {
+    businessName: string;
+    businessType: string | null;
+    logoUrl: string | null;
+    location: string;
+}
+
 export default function EmployerDashboardPage() {
     const [stats, setStats] = useState<DashboardStats>(DEFAULT_STATS);
     const [jobs, setJobs] = useState<JobWithPipeline[]>([]);
     const [filterStatus, setFilterStatus] = useState<'all' | 'ACTIVE' | 'CLOSED' | 'DRAFT'>('all');
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [employer, setEmployer] = useState<EmployerInfo | null>(null);
 
     const fetchDashboard = async () => {
         try {
@@ -81,8 +90,26 @@ export default function EmployerDashboardPage() {
         }
     };
 
+    const fetchEmployerProfile = async () => {
+        try {
+            const res = await fetch('/api/profile/employer', { credentials: 'include' });
+            const data = await res.json();
+            if (data.success && data.data) {
+                setEmployer({
+                    businessName: data.data.businessName,
+                    businessType: data.data.businessType,
+                    logoUrl: data.data.logoUrl,
+                    location: data.data.location,
+                });
+            }
+        } catch {
+            // No profile yet
+        }
+    };
+
     useEffect(() => {
         fetchDashboard();
+        fetchEmployerProfile();
     }, []);
 
     // Action: Close / Reopen job
@@ -150,22 +177,52 @@ export default function EmployerDashboardPage() {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-3">
-                        <Building2 className="w-8 h-8 text-blue-400" />
-                        Dashboard Tuyển dụng
-                    </h1>
-                    <p className="text-slate-400 mt-1">Tổng quan hiệu quả tuyển dụng &amp; quản lý pipeline ứng viên</p>
-                </div>
-                <div className="flex gap-3">
-                    <Link href="/employer/branches" className="btn-secondary text-sm">
-                        <GitBranch className="w-4 h-4" /> Chi nhánh
-                    </Link>
-                    <Link href="/employer/jobs/create" className="btn-primary text-sm">
-                        <Plus className="w-4 h-4" /> Đăng tin mới
-                    </Link>
+            {/* ── Employer Profile Card ── */}
+            <div className="glass-card p-5 mb-6 animate-fade-in">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        {/* Logo */}
+                        <Link href="/employer/profile" className="group relative flex-shrink-0">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center overflow-hidden border-2 border-white/10 group-hover:border-blue-500/40 transition-all">
+                                {employer?.logoUrl ? (
+                                    <img src={employer.logoUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    <Building2 className="w-7 h-7 text-slate-300" />
+                                )}
+                            </div>
+                            <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Camera className="w-5 h-5 text-white" />
+                            </div>
+                        </Link>
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-bold text-white">
+                                {employer?.businessName || 'Dashboard Tuyển dụng'}
+                            </h1>
+                            <div className="flex items-center gap-3 text-sm text-slate-400 mt-0.5">
+                                {employer?.businessType && (
+                                    <span className="flex items-center gap-1">
+                                        <Store className="w-3.5 h-3.5" /> {employer.businessType}
+                                    </span>
+                                )}
+                                {employer?.location && (
+                                    <span className="flex items-center gap-1">
+                                        <MapPin className="w-3.5 h-3.5" /> {employer.location}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        <Link href="/employer/profile" className="btn-secondary text-sm">
+                            <Pencil className="w-3.5 h-3.5" /> Hồ sơ
+                        </Link>
+                        <Link href="/employer/branches" className="btn-secondary text-sm">
+                            <GitBranch className="w-3.5 h-3.5" /> Chi nhánh
+                        </Link>
+                        <Link href="/employer/jobs/create" className="btn-primary text-sm">
+                            <Plus className="w-4 h-4" /> Đăng tin mới
+                        </Link>
+                    </div>
                 </div>
             </div>
 
